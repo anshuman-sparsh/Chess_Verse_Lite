@@ -17,7 +17,7 @@ A beautiful, interactive chess game review and analysis web application. Load yo
 - **Instant Game Analysis**: Paste your PGN (Portable Game Notation) games to get move-by-move evaluation and accuracy grading.
 - **Built-in Chess Engine**: Powered by the Stockfish chess engine running directly inside your browser via WebAssembly (WASM).
 - **Interactive Evaluation Curve**: View a real-time graph showing who is winning and how the game balance shifted.
-- **Review & Practice Modes**: Step through full games at your own pace or play moves on the board dynamically.
+- **Review & Analyze Modes**: Step through full games at your own pace or play moves on the board dynamically.
 - **Sleek Modern Design**: A clean, dark-themed responsive interface optimized for both desktop and mobile devices.
 
 ---

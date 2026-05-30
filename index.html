@@ -1,212 +1,199 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Chess_Verse</title>
-    <link rel="stylesheet" href="static/css/style.css" />
 
-    <!-- chessboard.js styles (local) -->
-    <link
-      rel="stylesheet"
-      href="static/css/chessboard.min.css"
-    />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chess_Verse</title>
+  <link rel="stylesheet" href="static/css/style.css" />
 
-    <!-- chess.js (local) -->
-    <!-- jQuery is required by chessboard.js -->
-    <script src="static/js/jquery.min.js"></script>
-    <script src="static/js/chess.min.js"></script>
-    <!-- chessboard.js (local) -->
-    <script src="static/js/chessboard.min.js"></script>
+  <!-- chessboard.js styles (local) -->
+  <link rel="stylesheet" href="static/css/chessboard.min.css" />
 
-    <!-- app logic -->
-    <script src="static/js/app.js" defer></script>
-  </head>
-  <body>
+  <!-- chess.js (local) -->
+  <!-- jQuery is required by chessboard.js -->
+  <script src="static/js/jquery.min.js"></script>
+  <script src="static/js/chess.min.js"></script>
+  <!-- chessboard.js (local) -->
+  <script src="static/js/chessboard.min.js"></script>
 
-    <main class="container">
-      <div class="main-grid">
-        <section class="board-section panel">
-          <div class="section-header">
-            <h2>Board</h2>
-            <div class="mode-toggle">
-              <button id="modeReviewBtn" class="btn btn-mode active" type="button">Review Mode</button>
-              <button id="modePracticeBtn" class="btn btn-mode" type="button">Practice Mode</button>
+  <!-- app logic -->
+  <script src="static/js/app.js" defer></script>
+</head>
+
+<body>
+
+  <main class="container">
+    <div class="main-grid">
+      <section class="board-section panel">
+        <div class="section-header">
+          <h2>Board</h2>
+          <div class="mode-toggle">
+            <button id="modeReviewBtn" class="btn btn-mode active" type="button">Review Mode</button>
+            <button id="modePracticeBtn" class="btn btn-mode" type="button">Analyze Mode</button>
+          </div>
+        </div>
+        <div class="board-players">
+          <div class="board-header">
+            <div id="playerBlack" class="player-name player-black">Black</div>
+            <div id="loadingIndicator" class="loading hidden" role="status" aria-live="polite" aria-hidden="true">
+              Analyzing...
             </div>
           </div>
-          <div class="board-players">
-            <div class="board-header">
-              <div id="playerBlack" class="player-name player-black">Black</div>
-              <div
-                id="loadingIndicator"
-                class="loading hidden"
-                role="status"
-                aria-live="polite"
-                aria-hidden="true"
-              >
-                Analyzing...
-              </div>
-            </div>
-            <div class="board-wrapper">
-              <div id="evalBar" class="eval-bar" role="img" aria-label="Position evaluation">
-                <div id="evalBarFlip" class="eval-bar-flip">
-                  <div class="eval-bar-track">
-                    <div id="evalFill" class="eval-fill"></div>
-                  </div>
+          <div class="board-wrapper">
+            <div id="evalBar" class="eval-bar" role="img" aria-label="Position evaluation">
+              <div id="evalBarFlip" class="eval-bar-flip">
+                <div class="eval-bar-track">
+                  <div id="evalFill" class="eval-fill"></div>
                 </div>
-                <div id="evalLabelTop" class="eval-label eval-label-top"></div>
-                <div id="evalLabelBottom" class="eval-label eval-label-bottom"></div>
-                <div id="evalTooltip" class="eval-tooltip hidden" aria-hidden="true"></div>
               </div>
-              <div class="board-container">
-                <div id="board" class="board"></div>
-                <div
-                  id="gameResultOverlay"
-                  class="game-result-overlay hidden"
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="resultTitle"
-                  aria-hidden="true"
-                >
-                  <div class="result-box">
-                    <h2 id="resultTitle"></h2>
-                    <p id="resultReason"></p>
-                    <button type="button" class="btn result-review-btn" onclick="restartGame()">
-                      Review Again
-                    </button>
-                  </div>
+              <div id="evalLabelTop" class="eval-label eval-label-top"></div>
+              <div id="evalLabelBottom" class="eval-label eval-label-bottom"></div>
+              <div id="evalTooltip" class="eval-tooltip hidden" aria-hidden="true"></div>
+            </div>
+            <div class="board-container">
+              <div id="board" class="board"></div>
+              <div id="gameResultOverlay" class="game-result-overlay hidden" role="dialog" aria-modal="true"
+                aria-labelledby="resultTitle" aria-hidden="true">
+                <div class="result-box">
+                  <h2 id="resultTitle"></h2>
+                  <p id="resultReason"></p>
+                  <button type="button" class="btn result-review-btn" onclick="restartGame()">
+                    Review Again
+                  </button>
                 </div>
               </div>
             </div>
-            <div id="playerWhite" class="player-name player-white">White</div>
           </div>
+          <div id="playerWhite" class="player-name player-white">White</div>
+        </div>
 
-          <div class="board-controls" aria-label="Move navigation">
-            <button id="prevBtn" class="btn btn-secondary nav-btn" type="button">
-              ⬅ Previous
-            </button>
-            <button id="flipBtn" class="btn btn-secondary nav-btn" type="button">
-              Flip Board
-            </button>
-            <button id="soundToggle" class="btn btn-secondary nav-btn sound-toggle-btn" type="button" title="Toggle sound effects">
-              🔊
-            </button>
-            <button id="nextBtn" class="btn nav-btn" type="button">
-              Next ➡
-            </button>
+        <div class="board-controls" aria-label="Move navigation">
+          <button id="prevBtn" class="btn btn-secondary nav-btn" type="button">
+            ⬅ Previous
+          </button>
+          <button id="flipBtn" class="btn btn-secondary nav-btn" type="button">
+            Flip Board
+          </button>
+          <button id="soundToggle" class="btn btn-secondary nav-btn sound-toggle-btn" type="button"
+            title="Toggle sound effects">
+            🔊
+          </button>
+          <button id="nextBtn" class="btn nav-btn" type="button">
+            Next ➡
+          </button>
+        </div>
+
+        <p id="appStatus" class="app-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="analysis-section panel">
+        <div class="section-header">
+          <h2>Analysis Result</h2>
+          <button id="openPgnModal" class="btn btn-pgn-open" type="button">📋 Load PGN</button>
+        </div>
+        <div id="analysisSummary" class="analysis-summary" aria-live="polite">
+          <div class="stat-card">
+            <div class="stat-title">White Accuracy</div>
+            <div id="whiteAccuracy" class="stat-value">--%</div>
           </div>
-
-          <p id="appStatus" class="app-status" role="status" aria-live="polite"></p>
-        </section>
-
-        <section class="analysis-section panel">
-          <div class="section-header">
-            <h2>Analysis Result</h2>
-            <button id="openPgnModal" class="btn btn-pgn-open" type="button">📋 Load PGN</button>
+          <div class="stat-card">
+            <div class="stat-title">Black Accuracy</div>
+            <div id="blackAccuracy" class="stat-value">--%</div>
           </div>
-          <div id="analysisSummary" class="analysis-summary" aria-live="polite">
-            <div class="stat-card">
-              <div class="stat-title">White Accuracy</div>
-              <div id="whiteAccuracy" class="stat-value">--%</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-title">Black Accuracy</div>
-              <div id="blackAccuracy" class="stat-value">--%</div>
-            </div>
-          </div>
+        </div>
 
-          <div class="analysis-tabs">
-            <button id="tabMovesBtn" class="tab-btn active" type="button">Moves</button>
-            <button id="tabInfoBtn" class="tab-btn" type="button">Info</button>
-          </div>
+        <div class="analysis-tabs">
+          <button id="tabMovesBtn" class="tab-btn active" type="button">Moves</button>
+          <button id="tabInfoBtn" class="tab-btn" type="button">Info</button>
+        </div>
 
-          <div id="tabContentMoves" class="tab-content">
-            <div class="current-move-panel" aria-live="polite">
-              <h3 class="current-move-title">Current Move Analysis</h3>
-              <p id="analysisEmptyState" class="current-move-placeholder">
-                No analysis yet. Click <b>📋 Load PGN</b> above to get started.
-              </p>
-              <div id="currentMoveDetail" class="current-move-detail" hidden>
-                <div id="panelMoveHeadline" class="panel-move-headline"></div>
-                <div id="panelClassification" class="panel-classification"></div>
-                <div id="panelLoss" class="panel-loss"></div>
-                <div id="panelBestMoveSection" class="panel-best-move-section" hidden>
-                  <span class="best-move-label">Best Move:</span> <span id="panelBestMove" class="best-move-value"></span>
-                  <div class="pv-container">
-                    <span class="pv-label">Continuation:</span> <span id="panelPV" class="pv-value"></span>
-                  </div>
+        <div id="tabContentMoves" class="tab-content">
+          <div class="current-move-panel" aria-live="polite">
+            <h3 class="current-move-title">Current Move Analysis</h3>
+            <p id="analysisEmptyState" class="current-move-placeholder">
+              No analysis yet. Click <b>📋 Load PGN</b> above to get started.
+            </p>
+            <div id="currentMoveDetail" class="current-move-detail" hidden>
+              <div id="panelMoveHeadline" class="panel-move-headline"></div>
+              <div id="panelClassification" class="panel-classification"></div>
+              <div id="panelLoss" class="panel-loss"></div>
+              <div id="panelBestMoveSection" class="panel-best-move-section" hidden>
+                <span class="best-move-label">Best Move:</span> <span id="panelBestMove" class="best-move-value"></span>
+                <div class="pv-container">
+                  <span class="pv-label">Continuation:</span> <span id="panelPV" class="pv-value"></span>
                 </div>
               </div>
             </div>
-
-            <div class="move-log-container">
-              <h3 class="panel-section-title">Move History</h3>
-              <div id="moveLog" class="move-log">
-                <p class="move-log-placeholder">Analyze a game to see the move history.</p>
-              </div>
-            </div>
           </div>
 
-          <div id="tabContentInfo" class="tab-content" hidden>
-            <!-- Move Statistics Breakdown Card -->
-            <div id="statsBreakdown" class="stats-breakdown" hidden>
-              <h3 class="panel-section-title">Move Classification Breakdown</h3>
-              <table class="stats-table" id="statsTable">
-                <thead>
-                  <tr>
-                    <th class="stats-cls-col">Classification</th>
-                    <th class="stats-count-col">White</th>
-                    <th class="stats-count-col">Black</th>
-                  </tr>
-                </thead>
-                <tbody id="statsTableBody">
-                </tbody>
-              </table>
-            </div>
-            <!-- Empty state for Info if no analysis is loaded -->
-            <div id="infoEmptyState" class="current-move-placeholder" style="margin-top: 16px;">
-              No classification breakdown yet. Load and analyze a game to see stats.
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- PGN Modal Overlay -->
-      <div id="pgnModalOverlay" class="pgn-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pgnModalTitle" aria-hidden="true">
-        <div class="pgn-modal">
-          <div class="pgn-modal-header">
-            <h2 id="pgnModalTitle">Load Game PGN</h2>
-            <button id="closePgnModal" class="pgn-modal-close" type="button" aria-label="Close">&times;</button>
-          </div>
-          <div class="pgn-modal-body">
-            <label for="pgnInput" class="label">
-              Paste PGN (first game will be analyzed)
-            </label>
-            <textarea
-              id="pgnInput"
-              class="textarea pgn-modal-textarea"
-              placeholder='Example: "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."'
-            ></textarea>
-
-            <div class="actions">
-              <button id="analyzeBtn" class="btn" type="button">Analyze Game</button>
-              <button id="resetBtn" class="btn btn-secondary" type="button">Reset Board</button>
-            </div>
-
-            <div class="hint">
-              Move validation happens in the browser using <code>chess.js</code>.
+          <div class="move-log-container">
+            <h3 class="panel-section-title">Move History</h3>
+            <div id="moveLog" class="move-log">
+              <p class="move-log-placeholder">Analyze a game to see the move history.</p>
             </div>
           </div>
         </div>
-      </div>
-    </main>
 
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-brand">Chess_Verse</div>
-        <div class="footer-text">Review chess games with fast, extendable analysis</div>
-        <div class="footer-attribution">Made with Antigravity 2.0</div>
+        <div id="tabContentInfo" class="tab-content" hidden>
+          <!-- Move Statistics Breakdown Card -->
+          <div id="statsBreakdown" class="stats-breakdown" hidden>
+            <h3 class="panel-section-title">Move Classification Breakdown</h3>
+            <table class="stats-table" id="statsTable">
+              <thead>
+                <tr>
+                  <th class="stats-cls-col">Classification</th>
+                  <th class="stats-count-col">White</th>
+                  <th class="stats-count-col">Black</th>
+                </tr>
+              </thead>
+              <tbody id="statsTableBody">
+              </tbody>
+            </table>
+          </div>
+          <!-- Empty state for Info if no analysis is loaded -->
+          <div id="infoEmptyState" class="current-move-placeholder" style="margin-top: 16px;">
+            No classification breakdown yet. Load and analyze a game to see stats.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PGN Modal Overlay -->
+    <div id="pgnModalOverlay" class="pgn-modal-overlay hidden" role="dialog" aria-modal="true"
+      aria-labelledby="pgnModalTitle" aria-hidden="true">
+      <div class="pgn-modal">
+        <div class="pgn-modal-header">
+          <h2 id="pgnModalTitle">Load Game PGN</h2>
+          <button id="closePgnModal" class="pgn-modal-close" type="button" aria-label="Close">&times;</button>
+        </div>
+        <div class="pgn-modal-body">
+          <label for="pgnInput" class="label">
+            Paste PGN (first game will be analyzed)
+          </label>
+          <textarea id="pgnInput" class="textarea pgn-modal-textarea"
+            placeholder='Example: "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."'></textarea>
+
+          <div class="actions">
+            <button id="analyzeBtn" class="btn" type="button">Analyze Game</button>
+            <button id="resetBtn" class="btn btn-secondary" type="button">Reset Board</button>
+          </div>
+
+          <div class="hint">
+            Move validation happens in the browser using <code>chess.js</code>.
+          </div>
+        </div>
       </div>
-    </footer>
-  </body>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">Chess_Verse</div>
+      <div class="footer-text">Review chess games with fast, extendable analysis</div>
+      <div class="footer-attribution">Made with Antigravity 2.0</div>
+    </div>
+  </footer>
+</body>
+
 </html>

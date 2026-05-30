@@ -197,8 +197,9 @@ function getPvSan(fen, pvUcis, maxLength = 5) {
 }
 
 async function analyzeGameMainline(pgnText, progressCallback) {
+  const sanitized = normalizePgnDoubleNewline(pgnText);
   const gameBoard = new window.Chess();
-  if (!gameBoard.load_pgn(pgnText)) {
+  if (!gameBoard.load_pgn(sanitized)) {
     throw new Error("Invalid PGN game.");
   }
   
@@ -398,6 +399,19 @@ function isStartPosition(fen) {
   if (!fen || fen === "start") return true;
   const cleanFen = fen.trim().split(/\s+/)[0];
   return cleanFen === "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+}
+
+function normalizePgnDoubleNewline(pgn) {
+  const cleanPgn = (pgn || "").trim();
+  const lastTagIndex = cleanPgn.lastIndexOf("]");
+  if (lastTagIndex !== -1) {
+    const headers = cleanPgn.slice(0, lastTagIndex + 1);
+    const moves = cleanPgn.slice(lastTagIndex + 1).trim();
+    if (moves) {
+      return headers + "\n\n" + moves;
+    }
+  }
+  return cleanPgn;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1774,7 +1788,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   analyzeBtn.addEventListener("click", async () => {
-    const pgn = (pgnInput.value || "").trim();
+    let pgn = (pgnInput.value || "").trim();
+    pgn = normalizePgnDoubleNewline(pgn);
     clearAnalysisUI();
     loadedGamePgn = "";
     moves = [];

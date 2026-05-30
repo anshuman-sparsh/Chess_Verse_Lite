@@ -1449,13 +1449,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function onDragStart(source, piece, position, orientation) {
-    // If this drag start was triggered by a touch event or touch-emulated mouse event,
-    // do not clear the selection or highlights.
-    if (Date.now() - lastTouchTime < 1000) {
-      return false;
-    }
-    selectedSquare = null;
-    removeHighlights();
     return false;
   }
 

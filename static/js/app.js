@@ -394,6 +394,12 @@ function extractPgnTagValue(pgn, tag) {
   return match && match[1] ? match[1].trim() : "";
 }
 
+function isStartPosition(fen) {
+  if (!fen || fen === "start") return true;
+  const cleanFen = fen.trim().split(/\s+/)[0];
+  return cleanFen === "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const boardEl = document.getElementById("board");
   const pgnInput = document.getElementById("pgnInput");
@@ -1493,9 +1499,24 @@ document.addEventListener("DOMContentLoaded", () => {
     engine.terminateWorker();
 
     try {
-      const analysis = await engine.analyzePosition(fen, 14);
-      const score = analysis.pawns;
-      const mate = analysis.mate;
+      let score = 0.0;
+      let mate = null;
+      let bestMove = null;
+      let pv = [];
+
+      if (isStartPosition(fen)) {
+        score = 0.0;
+        mate = null;
+        bestMove = "e4";
+        pv = ["e4", "e5", "Nf3", "Nc6", "Bb5"];
+      } else {
+        const analysis = await engine.analyzePosition(fen, 14);
+        score = analysis.pawns;
+        mate = analysis.mate;
+        bestMove = analysis.best_move;
+        pv = analysis.pv;
+      }
+
       const isMate = mate !== null && mate !== undefined;
 
       if (headline) {
@@ -1518,11 +1539,11 @@ document.addEventListener("DOMContentLoaded", () => {
         clsEl.className = "panel-classification panel-cls-book";
       }
 
-      if (analysis.best_move) {
-        if (lossEl) lossEl.textContent = `Stockfish recommended: ${analysis.best_move}`;
+      if (bestMove) {
+        if (lossEl) lossEl.textContent = `Stockfish recommended: ${bestMove}`;
         if (bestMoveSection && bestMoveEl && pvEl) {
-          bestMoveEl.textContent = analysis.best_move;
-          pvEl.textContent = analysis.pv && analysis.pv.length > 0 ? analysis.pv.join(" ") : "—";
+          bestMoveEl.textContent = bestMove;
+          pvEl.textContent = pv && pv.length > 0 ? pv.join(" ") : "—";
           bestMoveSection.hidden = false;
         }
       } else {

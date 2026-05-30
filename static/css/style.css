@@ -8,6 +8,7 @@
   --accent: #6ea8fe;
   --accent-2: #7cf0c4;
   --danger: #ff6b6b;
+  --board-max-width: min(100%, 560px, calc(100vh - 210px));
 }
 
 * {
@@ -242,10 +243,10 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: 12px;
-  margin-bottom: 10px;
+  margin-top: 6px;
+  margin-bottom: 4px;
   width: 100%;
-  max-width: min(100%, 560px);
+  max-width: var(--board-max-width);
   padding-left: 34px;
 }
 
@@ -265,7 +266,7 @@ body {
   display: flex;
   align-items: stretch;
   width: 100%;
-  max-width: min(100%, 560px);
+  max-width: var(--board-max-width);
   margin-top: 0;
 }
 
@@ -454,21 +455,19 @@ body {
 
 .player-name {
   width: 100%;
-  text-align: center;
   color: var(--muted);
   font-weight: 800;
   letter-spacing: 0.2px;
-  margin: 2px 0 6px;
+  margin: 0;
 }
 
 .player-black {
-  margin-top: 0;
-  margin-bottom: 6px;
+  margin: 0;
 }
 
 .player-white {
-  margin-top: 6px;
-  margin-bottom: 2px;
+  margin-top: 4px;
+  margin-bottom: 0;
   text-align: left;
   padding-left: 34px;
 }
@@ -477,20 +476,26 @@ body {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 10px;
+  margin: 8px auto 0;
+  max-width: var(--board-max-width);
+  width: 100%;
   flex-wrap: wrap;
 }
 
 .nav-btn {
   flex: 1;
-  min-width: 150px;
+  min-width: 80px;
+  white-space: nowrap;
 }
 
 .app-status {
-  margin: 10px 0 0;
+  margin: 6px auto 0;
+  max-width: var(--board-max-width);
+  width: 100%;
   min-height: 1.2em;
   color: var(--muted);
   font-size: 0.95rem;
+  text-align: center;
 }
 
 .label {
@@ -1054,8 +1059,8 @@ body {
 
 /* Footer Styles */
 .footer {
-  margin-top: 40px;
-  padding: 30px 20px;
+  margin-top: 0;
+  padding: 16px 20px;
   border-top: 1px solid var(--border);
   background: rgba(15, 27, 51, 0.4);
   backdrop-filter: blur(8px);
@@ -1164,6 +1169,20 @@ body {
   }
   .stats-table td {
     padding: 5px 4px;
+  }
+}
+
+/* Height-based adjustments for short viewports */
+@media (max-height: 780px) {
+  .container {
+    padding-top: 10px;
+    padding-bottom: 15px;
+  }
+  .panel {
+    padding: 12px;
+  }
+  .section-header {
+    margin-bottom: 8px;
   }
 }
 

@@ -238,19 +238,29 @@ body {
 }
 
 /* Board + evaluation bar (chess.com–style, white POV from backend) */
-.board-header {
+.board-header,
+.board-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-top: 6px;
-  margin-bottom: 4px;
   width: 100%;
   max-width: var(--board-max-width);
   padding-left: 34px;
 }
 
-.board-header .player-name {
+.board-header {
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.board-footer {
+  margin-top: 4px;
+  margin-bottom: 6px;
+}
+
+.board-header .player-name,
+.board-footer .player-name {
   width: auto;
   flex: 1;
   min-width: 0;
@@ -258,7 +268,8 @@ body {
   margin: 0;
 }
 
-.board-header .player-black {
+.board-header .player-black,
+.board-footer .player-white {
   margin: 0;
 }
 
@@ -466,10 +477,7 @@ body {
 }
 
 .player-white {
-  margin-top: 4px;
-  margin-bottom: 0;
-  text-align: left;
-  padding-left: 34px;
+  margin: 0;
 }
 
 .board-controls {
@@ -1105,14 +1113,11 @@ body {
     padding: 12px;
     border-radius: 10px;
   }
-  .board-header {
+  .board-header,
+  .board-footer {
     padding-left: 34px;
     margin-top: 6px;
     margin-bottom: 6px;
-  }
-  .player-white {
-    padding-left: 34px;
-    margin-top: 4px;
   }
   .board-controls {
     gap: 8px;

@@ -41,10 +41,6 @@
         <div class="board-players">
           <div class="board-header">
             <div id="playerBlack" class="player-name player-black">Black</div>
-            <div id="loadingIndicator" class="loading hidden" role="status" aria-live="polite" aria-hidden="true">
-              Analyzing...
-            </div>
-            <button id="cancelAnalysisBtn" class="btn btn-cancel hidden" type="button">Cancel</button>
           </div>
           <div class="board-wrapper">
             <div id="evalBar" class="eval-bar" role="img" aria-label="Position evaluation">
@@ -124,6 +120,12 @@
         <div id="tabContentMoves" class="tab-content" role="tabpanel" aria-labelledby="tabMovesBtn" tabindex="0">
           <div class="current-move-panel" aria-live="polite">
             <h3 class="current-move-title">Current Move Analysis</h3>
+            <div id="analysisProgressRow" class="analysis-progress-row hidden">
+              <div id="loadingIndicator" class="loading" role="status" aria-live="polite" aria-hidden="true">
+                Analyzing...
+              </div>
+              <button id="cancelAnalysisBtn" class="btn btn-cancel hidden" type="button">Cancel analysis</button>
+            </div>
             <p id="analysisEmptyState" class="current-move-placeholder">
               No analysis yet. Click <b>📋 Load PGN</b> above to get started.
             </p>

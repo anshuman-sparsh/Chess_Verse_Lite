@@ -113,18 +113,19 @@ function setStatus(text, kind) {
   }
 }
 
-function setLoading(isLoading, message) {
+function setLoading(isLoading, message, canCancel = false) {
   const el = document.getElementById("loadingIndicator");
+  const row = document.getElementById("analysisProgressRow");
   const cancelBtn = document.getElementById("cancelAnalysisBtn");
   if (!el) return;
 
   if (isLoading) {
     el.textContent = message || "Analyzing...";
-    el.classList.remove("hidden");
+    row?.classList.remove("hidden");
     el.setAttribute("aria-hidden", "false");
-    cancelBtn?.classList.remove("hidden");
+    cancelBtn?.classList.toggle("hidden", !canCancel);
   } else {
-    el.classList.add("hidden");
+    row?.classList.add("hidden");
     el.setAttribute("aria-hidden", "true");
     cancelBtn?.classList.add("hidden");
   }
@@ -493,7 +494,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /** White POV pawns after the last played move; bar uses cached backend data only. */
   const EVAL_BAR_CLAMP = 5;
-  const EVAL_EPS = 0.05;
   const EVAL_BAR_PERCENT_MIN = 5;
   const EVAL_BAR_PERCENT_MAX = 95;
 
@@ -502,18 +502,12 @@ document.addEventListener("DOMContentLoaded", () => {
   /** Tooltip: e.g. "M3" when position has forced mate; null otherwise. */
   let evalBarTooltipMate = null;
 
-  function applyEvalBarVisuals(fill, percentHeight, evalForTint, isMate) {
+  function applyEvalBarVisuals(fill, percentHeight) {
     fill.style.height = `${percentHeight}%`;
     fill.style.bottom = "0%";
-    fill.className = "eval-fill";
-    if (isMate) {
-      if (percentHeight >= 99) fill.classList.add("eval-fill--white");
-      else fill.classList.add("eval-fill--black");
-      return;
-    }
-    if (evalForTint > EVAL_EPS) fill.classList.add("eval-fill--white");
-    else if (evalForTint < -EVAL_EPS) fill.classList.add("eval-fill--black");
-    else fill.classList.add("eval-fill--neutral");
+    // The fill always represents White's share; the dark track represents
+    // Black. Advantage changes height only, never the ownership colors.
+    fill.className = "eval-fill eval-fill--white";
   }
 
   function setEvalBarAria(bar) {
@@ -634,7 +628,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const neutral = () => {
       evalBarTooltipPawns = 0;
       evalBarTooltipMate = null;
-      applyEvalBarVisuals(fill, 50, 0, false);
+      applyEvalBarVisuals(fill, 50);
       setEvalBarAria(bar);
     };
 
@@ -659,7 +653,7 @@ document.addEventListener("DOMContentLoaded", () => {
         -EVAL_BAR_CLAMP,
         Math.min(EVAL_BAR_CLAMP, rawEval)
       );
-      applyEvalBarVisuals(fill, percentHeight, whiteMates ? 1 : -1, true);
+      applyEvalBarVisuals(fill, percentHeight);
       setEvalBarAria(bar);
       syncEvalTooltipTextIfVisible();
       updateEvalLabels(rawEval, mateRaw);
@@ -671,7 +665,7 @@ document.addEventListener("DOMContentLoaded", () => {
     evalBarTooltipPawns = clamped;
     let percent = 50 + clamped * 8;
     percent = Math.max(EVAL_BAR_PERCENT_MIN, Math.min(EVAL_BAR_PERCENT_MAX, percent));
-    applyEvalBarVisuals(fill, percent, clamped, false);
+    applyEvalBarVisuals(fill, percent);
     setEvalBarAria(bar);
     syncEvalTooltipTextIfVisible();
     updateEvalLabels(rawEval, mateRaw);
@@ -1657,14 +1651,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePlayersUI(parsedGame);
     updateNavButtons();
     updateBoard();
+    showTab("moves");
     closePgnModal();
 
     try {
-      setLoading(true, "Analyzing game...");
+      setLoading(true, "Analyzing game...", true);
       const report = await analyzeGameMainline(parsedGame, (ply, total) => {
         if (thisOperation !== operationId) return;
         const percent = Math.round((ply / Math.max(total, 1)) * 100);
-        setLoading(true, `Analyzing move ${ply} of ${total} (${percent}%)...`);
+        setLoading(true, `Analyzing move ${ply} of ${total} (${percent}%)...`, true);
       }, sessionId);
       if (thisOperation !== operationId) return;
 

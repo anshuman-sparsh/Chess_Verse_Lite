@@ -23,6 +23,29 @@ test("interactive controls retain required accessible state and no inline handle
   assert.doesNotMatch(html, /\sonclick=/i);
 });
 
+test("analysis progress and PGN-only cancellation live inside the Moves tab", () => {
+  const html = read("index.html");
+  const app = read("static/js/app.js");
+  const boardHeader = html.match(/<div class="board-header">([\s\S]*?)<\/div>/)?.[1] || "";
+  const movesPanel = html.match(/id="tabContentMoves"([\s\S]*?)id="tabContentInfo"/)?.[1] || "";
+  assert.doesNotMatch(boardHeader, /loadingIndicator|cancelAnalysisBtn/);
+  assert.match(movesPanel, /id="analysisProgressRow"/);
+  assert.match(movesPanel, /id="loadingIndicator"/);
+  assert.match(movesPanel, /id="cancelAnalysisBtn"/);
+  assert.match(app, /setLoading\(true, "Analyzing game\.\.\.", true\)/);
+  assert.match(app, /setLoading\(true, "Evaluating position\.\.\."\)/);
+  assert.match(app, /showTab\("moves"\);\s*closePgnModal\(\)/);
+});
+
+test("evaluation bar keeps stable White and Black ownership colors", () => {
+  const app = read("static/js/app.js");
+  const css = read("static/css/style.css");
+  assert.match(app, /fill\.className = "eval-fill eval-fill--white"/);
+  assert.doesNotMatch(app, /eval-fill--black|eval-fill--neutral/);
+  assert.match(css, /\.eval-bar-track[\s\S]*background:\s*#222/);
+  assert.match(css, /\.eval-fill--white[\s\S]*#ffffff/);
+});
+
 test("legacy parser and worker-termination paths cannot reappear in app code", () => {
   const app = read("static/js/app.js");
   assert.doesNotMatch(app, /extractSanTokensFromPgn|normalizePgnDoubleNewline|terminateWorker/);

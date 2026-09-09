@@ -159,6 +159,60 @@ document.addEventListener("DOMContentLoaded", () => {
   const pgnInput = document.getElementById("pgnInput");
   const analyzeBtn = document.getElementById("analyzeBtn");
   const resetBtn = document.getElementById("resetBtn");
+  const recentPgnSection = document.getElementById("recentPgnSection");
+  const recentPgnList = document.getElementById("recentPgnList");
+  const clearPgnHistoryBtn = document.getElementById("clearPgnHistory");
+  const PGN_HISTORY_KEY = "chess-verse-recent-games-v1";
+  const PGN_HISTORY_LIMIT = 8;
+
+  function readPgnHistory() {
+    try {
+      const value = JSON.parse(localStorage.getItem(PGN_HISTORY_KEY) || "[]");
+      return Array.isArray(value) ? value.filter((item) => item && typeof item.pgn === "string").slice(0, PGN_HISTORY_LIMIT) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function writePgnHistory(items) {
+    try { localStorage.setItem(PGN_HISTORY_KEY, JSON.stringify(items.slice(0, PGN_HISTORY_LIMIT))); }
+    catch (_) { /* History is optional when storage is unavailable. */ }
+  }
+
+  function renderPgnHistory() {
+    if (!recentPgnSection || !recentPgnList) return;
+    const history = readPgnHistory();
+    recentPgnSection.hidden = history.length === 0;
+    recentPgnList.replaceChildren();
+    history.forEach((item, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "recent-pgn-item";
+      button.dataset.historyIndex = String(index);
+      const title = document.createElement("strong");
+      title.textContent = `${item.white || "White"} vs ${item.black || "Black"}`;
+      const meta = document.createElement("span");
+      meta.textContent = [item.result && item.result !== "*" ? item.result : null, item.savedAt].filter(Boolean).join(" · ");
+      button.append(title, meta);
+      recentPgnList.appendChild(button);
+    });
+  }
+
+  function savePgnHistory(parsedGame) {
+    const pgn = parsedGame?.normalizedPgn;
+    if (!pgn) return;
+    const headers = parsedGame.headers || {};
+    const history = readPgnHistory().filter((item) => item.pgn !== pgn);
+    history.unshift({
+      pgn,
+      white: String(headers.White || "White").slice(0, 80),
+      black: String(headers.Black || "Black").slice(0, 80),
+      result: String(headers.Result || "*").slice(0, 16),
+      savedAt: new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+    });
+    writePgnHistory(history);
+    renderPgnHistory();
+  }
 
   // Tabs UI Elements
   const tabMovesBtn = document.getElementById("tabMovesBtn");
@@ -208,9 +262,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let practiceFens = [];
   let practiceCurrentIndex = 0;
   let selectedSquare = null;
-  let lastMousedownSquare = null;
-  let lastMousedownTime = 0;
-  let lastTouchTime = 0;
+  let suppressBoardClickUntil = 0;
+  let pendingBoardPointer = null;
 
   // Move navigation state (mainline only).
   let moves = [];
@@ -1249,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function onDrop(source, target) {
     if (source !== target) {
-      lastMousedownSquare = null;
+      suppressBoardClickUntil = Date.now() + 250;
     }
     selectedSquare = null;
     removeHighlights();
@@ -1437,65 +1490,72 @@ document.addEventListener("DOMContentLoaded", () => {
   wireEvalBarTooltip();
   updateEvalBar();
 
-  // Click-to-move square click handler
+  // Click-to-move uses one delegated click handler. This remains independent
+  // from chessboard.js dragging and survives the board's internal DOM redraws.
   if (boardEl) {
-    const handleStart = (square, isTouch) => {
-      if (isTouch) lastTouchTime = Date.now();
-      else if (Date.now() - lastTouchTime < 1000) return;
-
-      lastMousedownSquare = square;
-      lastMousedownTime = Date.now();
+    const squareFromTarget = (rawTarget) => {
+      const target = rawTarget instanceof Element ? rawTarget : null;
+      const squareElement = target?.closest("[data-square], .square-55d63");
+      if (!squareElement || !boardEl.contains(squareElement)) return null;
+      return squareElement.getAttribute("data-square")
+        || Array.from(squareElement.classList).map((name) => /^square-([a-h][1-8])$/.exec(name)?.[1]).find(Boolean)
+        || null;
     };
 
-    const handleEnd = (square, isTouch) => {
-      if (isTouch) lastTouchTime = Date.now();
-      else if (Date.now() - lastTouchTime < 1000) return;
-
-      if (lastMousedownSquare && square === lastMousedownSquare && (Date.now() - lastMousedownTime) < 350) {
-        handleSquareClick(square);
-      }
-      lastMousedownSquare = null;
+    const squareAtPoint = (x, y) => {
+      const element = Array.from(boardEl.querySelectorAll("[data-square]")).find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+      });
+      return element?.getAttribute("data-square") || null;
     };
 
-    boardEl.addEventListener("mousedown", (e) => {
+    const startBoardGesture = (event, kind) => {
       if (currentMode !== "practice") return;
-      const squareEl = e.target.closest("[data-square]");
-      if (squareEl) {
-        handleStart(squareEl.getAttribute("data-square"), false);
-      } else {
-        lastMousedownSquare = null;
-      }
-    }, true);
+      const square = squareFromTarget(event.target);
+      pendingBoardPointer = square ? {
+        kind,
+        square,
+        x: event.clientX,
+        y: event.clientY,
+        startedAt: Date.now(),
+      } : null;
+    };
 
-    boardEl.addEventListener("mouseup", (e) => {
-      if (currentMode !== "practice") return;
-      if (!lastMousedownSquare) return;
+    const finishBoardGesture = (event, kind) => {
+      const pending = pendingBoardPointer;
+      pendingBoardPointer = null;
+      if (currentMode !== "practice" || !pending || pending.kind !== kind) return;
+      const square = squareAtPoint(event.clientX, event.clientY)
+        || squareFromTarget(document.elementFromPoint(event.clientX, event.clientY))
+        || squareFromTarget(event.target);
+      const distance = Math.hypot(event.clientX - pending.x, event.clientY - pending.y);
+      if (square !== pending.square || distance > 8 || Date.now() - pending.startedAt > 700) return;
+      suppressBoardClickUntil = Date.now() + 350;
+      // Let chessboard.js finish its same-square drag cleanup before applying
+      // selection classes; otherwise its redraw immediately removes the hints.
+      setTimeout(() => {
+        if (currentMode === "practice") handleSquareClick(square);
+      }, 0);
+    };
 
-      const squareEl = e.target.closest("[data-square]");
-      const square = squareEl ? squareEl.getAttribute("data-square") : null;
-      handleEnd(square, false);
-    }, true);
-
-    boardEl.addEventListener("touchstart", (e) => {
-      if (currentMode !== "practice") return;
-      if (e.touches && e.touches.length > 0) {
-        const squareEl = e.touches[0].target.closest("[data-square]");
-        if (squareEl) {
-          handleStart(squareEl.getAttribute("data-square"), true);
-          return;
-        }
-      }
-      lastMousedownSquare = null;
+    boardEl.addEventListener("mousedown", (event) => startBoardGesture(event, "mouse"), true);
+    document.addEventListener("mouseup", (event) => finishBoardGesture(event, "mouse"), true);
+    boardEl.addEventListener("touchstart", (event) => {
+      const touch = event.touches?.[0];
+      if (touch) startBoardGesture({ target: touch.target, clientX: touch.clientX, clientY: touch.clientY }, "touch");
     }, { capture: true, passive: true });
-
-    boardEl.addEventListener("touchend", (e) => {
-      if (currentMode !== "practice") return;
-      if (!lastMousedownSquare) return;
-
-      const squareEl = e.target.closest("[data-square]");
-      const square = squareEl ? squareEl.getAttribute("data-square") : null;
-      handleEnd(square, true);
+    document.addEventListener("touchend", (event) => {
+      const touch = event.changedTouches?.[0];
+      if (touch) finishBoardGesture({ target: touch.target, clientX: touch.clientX, clientY: touch.clientY }, "touch");
     }, { capture: true, passive: true });
+    document.addEventListener("touchcancel", () => { pendingBoardPointer = null; }, { capture: true, passive: true });
+
+    boardEl.addEventListener("click", (event) => {
+      if (currentMode !== "practice" || Date.now() < suppressBoardClickUntil) return;
+      const square = squareFromTarget(event.target);
+      if (square) handleSquareClick(square);
+    });
   }
 
   // Keyboard navigation (global).
@@ -1618,6 +1678,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setStatus("Analysis ready.", "ok");
       loadGame(parsedGame, data);
+      savePgnHistory(parsedGame);
     } catch (e) {
       if (e?.name !== "AbortError" && thisOperation === operationId) {
         setStatus(`Analysis failed: ${e?.message || String(e)}`, "error");
@@ -1646,6 +1707,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function openPgnModal() {
     if (pgnModalOverlay) {
+      renderPgnHistory();
       modalOpener = document.activeElement;
       pgnModalOverlay.classList.remove("hidden");
       pgnModalOverlay.setAttribute("aria-hidden", "false");
@@ -1663,6 +1725,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (openPgnModalBtn) openPgnModalBtn.addEventListener("click", openPgnModal);
   if (closePgnModalBtn) closePgnModalBtn.addEventListener("click", closePgnModal);
+  recentPgnList?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-history-index]");
+    if (!button || !pgnInput) return;
+    const item = readPgnHistory()[Number(button.dataset.historyIndex)];
+    if (!item) return;
+    pgnInput.value = item.pgn;
+    setPgnModalError("");
+    pgnInput.focus();
+  });
+  clearPgnHistoryBtn?.addEventListener("click", () => {
+    try { localStorage.removeItem(PGN_HISTORY_KEY); } catch (_) {}
+    renderPgnHistory();
+    pgnInput?.focus();
+  });
 
   // Close modal on backdrop click
   if (pgnModalOverlay) {

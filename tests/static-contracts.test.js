@@ -32,6 +32,29 @@ test("legacy parser and worker-termination paths cannot reappear in app code", (
   assert.match(app, /moveLogEl\.scrollTop/);
 });
 
+test("Practice Mode supports delegated click-to-select and click-to-move", () => {
+  const app = read("static/js/app.js");
+  assert.match(app, /boardEl\.addEventListener\("click"/);
+  assert.match(app, /document\.addEventListener\("mouseup"/);
+  assert.match(app, /document\.addEventListener\("touchend"/);
+  assert.match(app, /handleSquareClick\(square\)/);
+  assert.match(app, /chess\.moves\(\{ square: square, verbose: true \}\)/);
+  assert.match(app, /commitPracticeMove\(selectedSquare, square\)/);
+  assert.match(app, /square-hint/);
+  assert.match(app, /square-capture-hint/);
+});
+
+test("Load PGN modal exposes safe local recent-game history", () => {
+  const html = read("index.html");
+  const app = read("static/js/app.js");
+  assert.match(html, /id="recentPgnSection"/);
+  assert.match(html, /id="recentPgnList"/);
+  assert.match(app, /chess-verse-recent-games-v1/);
+  assert.match(app, /savePgnHistory\(parsedGame\)/);
+  assert.match(app, /button\.dataset\.historyIndex/);
+  assert.doesNotMatch(app, /recentPgnList\.innerHTML/);
+});
+
 test("production CSP permits local WebAssembly but not external scripts", () => {
   const flask = read("app/__init__.py");
   const vercel = read("vercel.json");

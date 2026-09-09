@@ -215,6 +215,14 @@
             placeholder='Example: "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."'></textarea>
           <p id="pgnModalError" class="pgn-modal-error" role="alert" hidden></p>
 
+          <section id="recentPgnSection" class="recent-pgn-section" aria-labelledby="recentPgnTitle" hidden>
+            <div class="recent-pgn-header">
+              <h3 id="recentPgnTitle">Recent games</h3>
+              <button id="clearPgnHistory" class="recent-pgn-clear" type="button">Clear</button>
+            </div>
+            <div id="recentPgnList" class="recent-pgn-list"></div>
+          </section>
+
           <div class="actions">
             <button id="analyzeBtn" class="btn" type="button">Analyze Game</button>
             <button id="resetBtn" class="btn btn-secondary" type="button">Reset Board</button>

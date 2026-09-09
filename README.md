@@ -1,53 +1,76 @@
-# Chess Verse Lite 👑
+# Chess Verse Lite
 
-A beautiful, interactive chess game review and analysis web application. Load your chess games, see how accurate your moves were, and analyze positions directly in your web browser.
+Chess Verse Lite is a lightweight, responsive chess game reviewer. PGN parsing and Stockfish analysis run locally in the browser; no game data is sent to an analysis server.
 
-🔗 **[Play & Analyze Now (Live Link)](https://chess-verse-lite.vercel.app/)**
+Live app: [chess-verse-lite.vercel.app](https://chess-verse-lite.vercel.app/)
 
----
+## Features
 
-## 🌟 What is this?
+- Load standard PGNs or games that use `SetUp` and `FEN` headers.
+- Review every mainline move with a reusable Web Worker running bundled Stockfish.
+- Compare White/Black accuracy and inspect move classifications, best moves, and principal variations.
+- Explore variations in Practice Mode using click-to-move or drag-and-drop, including underpromotion choices.
+- Use keyboard navigation and a responsive dark/glassmorphic interface.
 
-**Chess Verse Lite** is a lightweight, high-performance chess analysis tool that runs entirely in your web browser. Whether you want to review your recent online chess games, study specific positions, or practice against an engine, Chess Verse Lite makes it easy without needing any downloads or server setup.
+## Analysis semantics
 
----
+Engine scores are stored as tagged values instead of overloading large centipawn numbers:
 
-## ✨ Features
+- `{ type: "cp", whitePovCp }`
+- `{ type: "mate", winner, moves }`
+- `{ type: "terminal", result: "draw" }`
 
-- **Instant Game Analysis**: Paste your PGN (Portable Game Notation) games to get move-by-move evaluation and accuracy grading.
-- **Built-in Chess Engine**: Powered by the Stockfish chess engine running directly inside your browser via WebAssembly (WASM).
-- **Interactive Evaluation Curve**: View a real-time graph showing who is winning and how the game balance shifted.
-- **Review & Analyze Modes**: Step through full games at your own pace or play moves on the board dynamically.
-- **Sleek Modern Design**: A clean, dark-themed responsive interface optimized for both desktop and mobile devices.
+Centipawn scores are normalized to White's point of view exactly once when Stockfish output is parsed. The displayed evaluation bar is also White POV.
 
----
+Win probability uses the logistic function below, with centipawns clamped to `[-1000, 1000]` for numerical stability:
 
-## 🚀 How to Use
+```text
+Wwhite(cp) = 100 / (1 + exp(-0.00368208 * cp))
+```
 
-1. **Open the App**: Click the [Live Link](https://chess-verse-lite.vercel.app/) to launch the app.
-2. **Load your Game**: Copy your chess game's PGN from websites like Chess.com or Lichess, paste it into the input area, and click **Analyze**.
-3. **Explore Moves**: Use the control buttons (Next, Previous, Play) to step through your game.
-4. **See Evaluations**: Watch the evaluation bar and game progress graph update in real-time to see your best moves and blunders!
+For each move, both before/after probabilities are converted to the mover's point of view. Win-probability loss is `max(0, Wbefore - Wafter)`. Per-move accuracy is:
 
----
+```text
+accuracy = 100 * exp(-0.035 * winProbabilityLoss)
+```
 
-## 💻 How to Run Locally
+Both values are clamped to `[0, 100]`. Player accuracy is the arithmetic mean of all available moves by that player, including short games. If a side made no move, its value is shown as unavailable rather than `0%`.
 
-If you want to run the project on your own computer, you have two options:
+Classifications use mover-POV win-probability loss: Best `<= 0.5`, Excellent `<= 1.5`, Good `<= 3`, Inaccuracy `<= 7`, Mistake `<= 15`, and Blunder above `15` percentage points. The exact engine move is always Best unless stronger, independently verified evidence exists. A Miss requires a failed decisive opportunity (or losing a forced mate), not merely a large ordinary loss. Book is emitted only from explicit book evidence. Great and Brilliant require evidence fields for uniqueness/non-obviousness or a sound persistent sacrifice; the current single-PV analyzer intentionally does not invent that evidence, so it conservatively avoids those labels.
 
-### Option 1: Double-Click (Simplest)
-Since Chess Verse Lite runs entirely in your browser, you can simply clone/download this repository and open the `index.html` file in any modern web browser.
+These formulas are application heuristics, not official Chess.com or Lichess formulas. Changing them will change historical accuracy and classification output.
 
-### Option 2: Run with Python Flask Server
-If you prefer to run it using a local development server:
+## Safety and limits
 
-1. Make sure you have Python installed.
-2. Install the required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Run the application:
-   ```bash
-   python run.py
-   ```
-4. Open your web browser and go to `http://localhost:5000`.
+- One Stockfish worker is reused across searches.
+- Reset, mode switch, cancellation, or a new game invalidates the current analysis session.
+- Searches have readiness, search, and stop-drain timeouts. A worker that cannot stop cleanly is replaced.
+- Only exact primary-PV scores are accepted; bound scores and other MultiPV lines are ignored.
+- PGN input is limited to 100,000 characters and games to 400 plies to protect low-memory/mobile devices.
+
+## Run locally
+
+Opening `index.html` directly may be blocked by browser Worker/WASM security rules. Serving the directory over HTTP is recommended:
+
+```bash
+python -m pip install -r requirements.txt
+python run.py
+```
+
+Then open `http://localhost:5000`.
+
+To explicitly enable Flask's development debugger, set `FLASK_DEBUG=1` in your local environment. Do not enable it in production.
+
+## Tests
+
+Node.js 18 or newer is sufficient; there are no npm runtime dependencies.
+
+```bash
+npm test
+```
+
+The regression suite covers chess.js PGN/FEN parsing, special moves, tagged score math, mover perspective, short games, mate/Miss behavior, conservative classification evidence, UCI readiness, worker reuse, cancellation, session changes, stale responses, and timeout recovery.
+
+## Deployment
+
+The included Vercel configuration adds baseline browser security headers. Stockfish remains client-side. There is no Gemini or AI Coach implementation in this version.

@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Chess_Verse</title>
+  <link rel="icon" href="static/img/chesspieces/wikipedia/wK.png" type="image/png" />
   <link rel="stylesheet" href="static/css/style.css" />
 
   <!-- chessboard.js styles (local) -->
@@ -18,6 +19,8 @@
   <script src="static/js/chessboard.min.js"></script>
 
   <!-- app logic -->
+  <script src="static/js/analysis-core.js" defer></script>
+  <script src="static/js/stockfish-controller.js" defer></script>
   <script src="static/js/app.js" defer></script>
 </head>
 
@@ -29,8 +32,8 @@
         <div class="section-header">
           <h2>Board</h2>
           <div class="mode-toggle">
-            <button id="modeReviewBtn" class="btn btn-mode active" type="button">Review Mode</button>
-            <button id="modePracticeBtn" class="btn btn-mode" type="button">Analyze Mode</button>
+            <button id="modeReviewBtn" class="btn btn-mode active" type="button" aria-pressed="true">Review Mode</button>
+            <button id="modePracticeBtn" class="btn btn-mode" type="button" aria-pressed="false">Practice Mode</button>
           </div>
         </div>
         <div class="board-players">
@@ -39,6 +42,7 @@
             <div id="loadingIndicator" class="loading hidden" role="status" aria-live="polite" aria-hidden="true">
               Analyzing...
             </div>
+            <button id="cancelAnalysisBtn" class="btn btn-cancel hidden" type="button">Cancel</button>
           </div>
           <div class="board-wrapper">
             <div id="evalBar" class="eval-bar" role="img" aria-label="Position evaluation">
@@ -58,7 +62,7 @@
                 <div class="result-box">
                   <h2 id="resultTitle"></h2>
                   <p id="resultReason"></p>
-                  <button type="button" class="btn result-review-btn" onclick="restartGame()">
+                  <button id="resultReviewBtn" type="button" class="btn result-review-btn">
                     Review Again
                   </button>
                 </div>
@@ -78,7 +82,7 @@
             Flip Board
           </button>
           <button id="soundToggle" class="btn btn-secondary nav-btn sound-toggle-btn" type="button"
-            title="Toggle sound effects">
+            title="Sound on" aria-label="Mute sound effects" aria-pressed="true">
             🔊
           </button>
           <button id="nextBtn" class="btn nav-btn" type="button">
@@ -105,12 +109,14 @@
           </div>
         </div>
 
-        <div class="analysis-tabs">
-          <button id="tabMovesBtn" class="tab-btn active" type="button">Moves</button>
-          <button id="tabInfoBtn" class="tab-btn" type="button">Info</button>
+        <div class="analysis-tabs" role="tablist" aria-label="Analysis sections">
+          <button id="tabMovesBtn" class="tab-btn active" type="button" role="tab" aria-selected="true"
+            aria-controls="tabContentMoves">Moves</button>
+          <button id="tabInfoBtn" class="tab-btn" type="button" role="tab" aria-selected="false"
+            aria-controls="tabContentInfo">Info</button>
         </div>
 
-        <div id="tabContentMoves" class="tab-content">
+        <div id="tabContentMoves" class="tab-content" role="tabpanel" aria-labelledby="tabMovesBtn">
           <div class="current-move-panel" aria-live="polite">
             <h3 class="current-move-title">Current Move Analysis</h3>
             <p id="analysisEmptyState" class="current-move-placeholder">
@@ -137,7 +143,7 @@
           </div>
         </div>
 
-        <div id="tabContentInfo" class="tab-content" hidden>
+        <div id="tabContentInfo" class="tab-content" role="tabpanel" aria-labelledby="tabInfoBtn" hidden>
           <!-- Move Statistics Breakdown Card -->
           <div id="statsBreakdown" class="stats-breakdown" hidden>
             <h3 class="panel-section-title">Move Classification Breakdown</h3>
@@ -161,9 +167,23 @@
       </section>
     </div>
 
+    <div id="promotionOverlay" class="promotion-overlay hidden" role="dialog" aria-modal="true"
+      aria-labelledby="promotionTitle" aria-hidden="true">
+      <div class="promotion-dialog">
+        <h2 id="promotionTitle">Choose promotion</h2>
+        <div class="promotion-options">
+          <button type="button" class="btn" data-promotion="q">Queen</button>
+          <button type="button" class="btn" data-promotion="r">Rook</button>
+          <button type="button" class="btn" data-promotion="b">Bishop</button>
+          <button type="button" class="btn" data-promotion="n">Knight</button>
+        </div>
+        <button type="button" class="btn btn-secondary promotion-cancel">Cancel</button>
+      </div>
+    </div>
+
     <!-- PGN Modal Overlay -->
     <div id="pgnModalOverlay" class="pgn-modal-overlay hidden" role="dialog" aria-modal="true"
-      aria-labelledby="pgnModalTitle" aria-hidden="true">
+      aria-labelledby="pgnModalTitle" aria-describedby="pgnModalHint" aria-hidden="true">
       <div class="pgn-modal">
         <div class="pgn-modal-header">
           <h2 id="pgnModalTitle">Load Game PGN</h2>
@@ -171,17 +191,18 @@
         </div>
         <div class="pgn-modal-body">
           <label for="pgnInput" class="label">
-            Paste PGN (first game will be analyzed)
+            Paste one PGN game
           </label>
           <textarea id="pgnInput" class="textarea pgn-modal-textarea"
             placeholder='Example: "1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 ..."'></textarea>
+          <p id="pgnModalError" class="pgn-modal-error" role="alert" hidden></p>
 
           <div class="actions">
             <button id="analyzeBtn" class="btn" type="button">Analyze Game</button>
             <button id="resetBtn" class="btn btn-secondary" type="button">Reset Board</button>
           </div>
 
-          <div class="hint">
+          <div id="pgnModalHint" class="hint">
             Move validation happens in the browser using <code>chess.js</code>.
           </div>
         </div>

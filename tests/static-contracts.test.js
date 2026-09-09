@@ -37,6 +37,16 @@ test("analysis progress and PGN-only cancellation live inside the Moves tab", ()
   assert.match(app, /showTab\("moves"\);\s*closePgnModal\(\)/);
 });
 
+test("Reset control lives at the right edge of the analysis tabs", () => {
+  const html = read("index.html");
+  const css = read("static/css/style.css");
+  const tabs = html.match(/<div class="analysis-tabs"[\s\S]*?<div class="analysis-tab-viewport">/)?.[0] || "";
+  const modalActions = html.match(/<div class="actions">[\s\S]*?<\/div>/)?.[0] || "";
+  assert.match(tabs, /id="resetBtn"/);
+  assert.doesNotMatch(modalActions, /id="resetBtn"/);
+  assert.match(css, /\.btn-reset-board[\s\S]*margin-left:\s*auto/);
+});
+
 test("evaluation bar keeps stable White and Black ownership colors", () => {
   const app = read("static/js/app.js");
   const css = read("static/css/style.css");

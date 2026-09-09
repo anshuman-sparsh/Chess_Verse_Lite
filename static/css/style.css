@@ -135,6 +135,13 @@ body {
   gap: 8px;
 }
 
+.analysis-tab-buttons {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 8px;
+}
+
 .tab-btn {
   background: none;
   border: none;
@@ -164,6 +171,29 @@ body {
   width: 100%;
   height: 2px;
   background-color: #bababa;
+}
+
+.btn-reset-board {
+  align-self: center;
+  margin-left: auto;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
+}
+
+.btn-reset-board:hover {
+  border-color: rgba(110, 168, 254, 0.35);
+  color: var(--text);
+  background: rgba(110, 168, 254, 0.08);
 }
 
 .tab-content[hidden] {
@@ -1810,10 +1840,18 @@ body {
   .analysis-tabs {
     gap: 2px;
   }
+  .analysis-tab-buttons {
+    gap: 2px;
+  }
   .tab-btn {
     flex: 1 1 auto;
     padding-inline: 8px;
     font-size: 0.9rem;
+  }
+  .btn-reset-board {
+    min-height: 40px;
+    padding-inline: 8px;
+    font-size: 0.76rem;
   }
   .coach-report-section,
   .coach-ready-state {

@@ -107,13 +107,16 @@
           </div>
         </div>
 
-        <div class="analysis-tabs" role="tablist" aria-label="Analysis sections">
+        <div class="analysis-tabs">
+          <div class="analysis-tab-buttons" role="tablist" aria-label="Analysis sections">
           <button id="tabMovesBtn" class="tab-btn active" type="button" role="tab" aria-selected="true"
             aria-controls="tabContentMoves">Moves</button>
           <button id="tabInfoBtn" class="tab-btn" type="button" role="tab" aria-selected="false"
             aria-controls="tabContentInfo">Info</button>
           <button id="tabCoachBtn" class="tab-btn" type="button" role="tab" aria-selected="false"
             aria-controls="tabContentCoach" tabindex="-1">AI Coach</button>
+          </div>
+          <button id="resetBtn" class="btn-reset-board" type="button" title="Reset">Reset</button>
         </div>
 
         <div class="analysis-tab-viewport">
@@ -227,7 +230,6 @@
 
           <div class="actions">
             <button id="analyzeBtn" class="btn" type="button">Analyze Game</button>
-            <button id="resetBtn" class="btn btn-secondary" type="button">Reset Board</button>
           </div>
 
           <div id="pgnModalHint" class="hint">

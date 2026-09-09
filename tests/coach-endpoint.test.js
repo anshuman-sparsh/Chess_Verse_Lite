@@ -90,6 +90,15 @@ test("provider 400/401/403/429/500 and timeout errors map to safe responses", as
   });
 });
 
+test("persistent provider overload propagates a safe HTTP 503", async () => {
+  const built = await payload();
+  const response = await invoke(handlerWith(async () => { throw new ProviderError("provider_http", "sensitive provider detail", 503); }), { body: built });
+  assert.equal(response.status, 503);
+  assert.equal(response.body.error.code, "provider_overloaded");
+  assert.equal(response.body.error.message, "AI Coach is temporarily unavailable due to high demand. Please try again shortly.");
+  assert.doesNotMatch(JSON.stringify(response.body), /sensitive provider detail/);
+});
+
 test("best-effort endpoint rate limiting returns 429 with Retry-After", async () => {
   const built = await payload();
   const handler = createCoachHandler({

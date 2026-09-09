@@ -49,6 +49,7 @@ function mapProviderError(error) {
   }
   if (error.code === "timeout") return { status: 504, code: "provider_timeout", message: "AI Coach took too long. Please retry." };
   if (error.status === 429) return { status: 429, code: "rate_limited", message: "AI Coach is busy. Please wait and retry." };
+  if (error.status === 503) return { status: 503, code: "provider_overloaded", message: "AI Coach is temporarily unavailable due to high demand. Please try again shortly." };
   if ([400, 401, 403].includes(error.status)) {
     return { status: 503, code: "coach_unavailable", message: "AI Coach is temporarily unavailable." };
   }
@@ -95,7 +96,7 @@ function createCoachHandler(dependencies = {}) {
     }
 
     try {
-      const generated = await provider(payload, { env });
+      const generated = await provider(payload, { env, logger });
       const report = core.validateCoachReport(generated.report, payload);
       return json(res, 200, {
         ok: true,
@@ -111,7 +112,7 @@ function createCoachHandler(dependencies = {}) {
         return json(res, 502, { ok: false, error: { code: "invalid_provider_response", message: "AI Coach returned an unsupported review. Please retry." } });
       }
       const safe = mapProviderError(error instanceof ProviderError ? error : new ProviderError("unknown", error?.message || "Unknown provider error", 500));
-      logger.error("AI Coach provider failure:", { code: error?.code, status: error?.status, message: error?.message });
+      logger.error("AI Coach provider failure:", { code: error?.code, status: error?.status });
       return json(res, safe.status, { ok: false, error: { code: safe.code, message: safe.message } }, safe.status === 429 ? { "Retry-After": "60" } : {});
     }
   };

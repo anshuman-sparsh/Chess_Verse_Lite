@@ -277,6 +277,9 @@
       if (!payload || generate.disabled) return;
       const requestPayload = payload;
       setState("loading", "Generating AI Coach Review...");
+      const busyTimer = setTimeout(() => {
+        if (payload === requestPayload && generate.disabled) status.textContent = "AI Coach is temporarily busy. Retrying...";
+      }, 700);
       try {
         const result = await manager.generate(requestPayload);
         if (payload !== requestPayload) return;
@@ -287,6 +290,8 @@
       } catch (error) {
         if (payload !== requestPayload) return;
         setState("error", error?.message || "AI Coach could not generate a review. Please retry.");
+      } finally {
+        clearTimeout(busyTimer);
       }
     });
 

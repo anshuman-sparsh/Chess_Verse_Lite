@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { CoachRequestManager, createMemoryCache, cacheKey, renderReport } = require("../static/js/coach-client.js");
+const { CoachRequestManager, createMemoryCache, cacheKey, renderReport, criticalMoveReference } = require("../static/js/coach-client.js");
 const core = require("../static/js/coach-core.js");
 const { payload, report } = require("./coach-fixtures.js");
 
@@ -8,28 +8,63 @@ function jsonResponse(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, async json() { return body; } };
 }
 
-test("rendered preferred move comes from trusted Stockfish analysis", async () => {
-  class Node {
-    constructor() { this.children = []; this.textContent = ""; this.className = ""; }
-    appendChild(child) { this.children.push(child); return child; }
-    append(...children) { this.children.push(...children); }
-    replaceChildren(...children) { this.children = children; }
-  }
+class FakeNode {
+  constructor() { this.children = []; this.textContent = ""; this.className = ""; }
+  appendChild(child) { this.children.push(child); return child; }
+  append(...children) { this.children.push(...children); }
+  replaceChildren(...children) { this.children = children; }
+}
+
+function renderedNodes(reportData) {
   const previousDocument = global.document;
-  global.document = { createElement: () => new Node() };
+  global.document = { createElement: () => new FakeNode() };
   try {
-    const built = await payload();
-    const prose = report();
-    prose.criticalMoments[0].preferredMove = "g8f6";
-    const trusted = core.validateCoachReport(prose, built);
-    const root = new Node();
-    renderReport(root, trusted);
+    const root = new FakeNode();
+    renderReport(root, reportData);
     const flatten = (node) => [node, ...node.children.flatMap(flatten)];
-    assert.ok(flatten(root).some((node) => node.textContent === "Stockfish preferred: Nf6"));
-    assert.ok(!flatten(root).some((node) => node.textContent.includes("g8f6")));
+    return flatten(root);
   } finally {
     global.document = previousDocument;
   }
+}
+
+test("rendered preferred move comes from trusted Stockfish analysis", async () => {
+  const built = await payload();
+  const prose = report();
+  prose.criticalMoments[0].preferredMove = "g8f6";
+  const nodes = renderedNodes(core.validateCoachReport(prose, built));
+  assert.ok(nodes.some((node) => node.textContent === "Stockfish preferred: Nf6"));
+  assert.ok(!nodes.some((node) => node.textContent.includes("g8f6")));
+});
+
+test("AI Coach UI hides ply terminology while trusted identifiers remain", async () => {
+  const built = await payload();
+  const trusted = core.validateCoachReport(report(), built);
+  assert.equal(trusted.criticalMoments[0].ply, 4);
+  assert.ok(trusted.overallReview.plies.length > 0);
+  const visible = renderedNodes(trusted).map((node) => node.textContent).join(" ");
+  assert.doesNotMatch(visible, /\bply|\bplies/i);
+  assert.doesNotMatch(visible, /Engine evidence:/i);
+});
+
+test("critical moments use SAN and correct White/Black move-number formatting", () => {
+  assert.equal(criticalMoveReference({ ply: 14, side: "black", san: "Nc6" }), "7...Nc6");
+  assert.equal(criticalMoveReference({ ply: 15, side: "white", san: "Be2" }), "8.Be2");
+  assert.equal(criticalMoveReference({ ply: 14, side: "black" }), "Move 7...");
+  assert.equal(criticalMoveReference({ ply: 15, side: "white" }), "Move 8.");
+});
+
+test("cached validated reports retain trusted moves and render without ply terminology", async () => {
+  const built = await payload();
+  const trusted = core.validateCoachReport(report(), built);
+  const cache = createMemoryCache();
+  await cache.set(cacheKey(built), trusted);
+  const manager = new CoachRequestManager({ cache, fetchImpl: async () => { throw new Error("must not call"); } });
+  const result = await manager.generate(built);
+  assert.equal(result.cached, true);
+  const visible = renderedNodes(result.report).map((node) => node.textContent).join(" ");
+  assert.match(visible, /2\.\.\.Nc6/);
+  assert.doesNotMatch(visible, /\bply|\bplies/i);
 });
 
 test("concurrent Generate actions share one request", async () => {

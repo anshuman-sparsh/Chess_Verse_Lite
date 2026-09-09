@@ -163,16 +163,25 @@
     list.className = "coach-list";
     for (const item of items) {
       const li = document.createElement("li");
-      li.textContent = item.text;
-      if (item.plies.length) {
-        const evidence = document.createElement("span");
-        evidence.className = "coach-evidence";
-        evidence.textContent = `Engine evidence: ${item.plies.map((ply) => `ply ${ply}`).join(", ")}`;
-        li.appendChild(evidence);
-      }
+      li.textContent = humanizeCoachText(item.text);
       list.appendChild(li);
     }
     container.appendChild(list);
+  }
+
+  function humanizeCoachText(value) {
+    return String(value || "").replace(/\bplies\b/gi, "moves").replace(/\bply\b/gi, "move");
+  }
+
+  function criticalMoveReference(moment) {
+    const ply = Number(moment?.ply);
+    const moveNumber = Number.isInteger(moment?.moveNumber) && moment.moveNumber > 0
+      ? moment.moveNumber
+      : Math.ceil(ply / 2);
+    const isBlack = moment?.side === "black" || (!moment?.side && Number.isInteger(ply) && ply % 2 === 0);
+    const suffix = isBlack ? "..." : ".";
+    const san = typeof moment?.san === "string" ? moment.san.trim() : "";
+    return san ? `${moveNumber}${suffix}${san}` : `Move ${moveNumber}${suffix}`;
   }
 
   function section(reportRoot, title) {
@@ -189,7 +198,7 @@
     root.replaceChildren();
     const overall = section(root, "Overall Review");
     const overallText = document.createElement("p");
-    overallText.textContent = report.overallReview.text;
+    overallText.textContent = humanizeCoachText(report.overallReview.text);
     overall.appendChild(overallText);
 
     appendEvidenceList(section(root, "Strengths"), report.strengths, "No specific strength had enough engine evidence to call out.");
@@ -206,13 +215,13 @@
       const card = document.createElement("article");
       card.className = "coach-critical-card";
       const heading = document.createElement("h4");
-      heading.textContent = `${moment.title} · Ply ${moment.ply} · ${moment.classification}`;
+      heading.textContent = `${humanizeCoachText(moment.title)} · ${criticalMoveReference(moment)} · ${moment.classification}`;
       card.appendChild(heading);
       const changed = document.createElement("p");
-      changed.textContent = moment.whatChanged;
+      changed.textContent = humanizeCoachText(moment.whatChanged);
       card.appendChild(changed);
       const mattered = document.createElement("p");
-      mattered.textContent = moment.whyItMattered;
+      mattered.textContent = humanizeCoachText(moment.whyItMattered);
       card.appendChild(mattered);
       if (moment.preferredMove) {
         const best = document.createElement("p");
@@ -233,7 +242,7 @@
         const label = document.createElement("strong");
         label.textContent = `${phase.side} ${phase.phase}: ${phase.rating}`;
         const text = document.createElement("span");
-        text.textContent = phase.text;
+        text.textContent = humanizeCoachText(phase.text);
         card.append(label, text);
         phases.appendChild(card);
       }
@@ -242,7 +251,7 @@
     const takeaway = section(root, "One-Line Takeaway");
     const takeawayText = document.createElement("p");
     takeawayText.className = "coach-takeaway";
-    takeawayText.textContent = report.oneLineTakeaway.text;
+    takeawayText.textContent = humanizeCoachText(report.oneLineTakeaway.text);
     takeaway.appendChild(takeawayText);
   }
 
@@ -338,6 +347,8 @@
     createMemoryCache,
     createIndexedDbCache,
     CoachRequestManager,
+    criticalMoveReference,
+    humanizeCoachText,
     renderReport,
     initializeUi,
     clearAnalysis: () => ui?.clearAnalysis(),

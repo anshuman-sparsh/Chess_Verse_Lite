@@ -4,7 +4,7 @@ const { callGemini, getGeminiConfig, DEFAULT_GEMINI_MODEL } = require("../lib/ge
 const { payload, report } = require("./coach-fixtures.js");
 
 test("model defaults centrally and swaps through configuration only", () => {
-  assert.equal(DEFAULT_GEMINI_MODEL, "gemini-3.7-flash");
+  assert.equal(DEFAULT_GEMINI_MODEL, "gemini-3.6-flash");
   assert.equal(getGeminiConfig({ GEMINI_API_KEY: "secret" }).model, DEFAULT_GEMINI_MODEL);
   assert.equal(getGeminiConfig({ GEMINI_API_KEY: "secret", GEMINI_MODEL: "gemini-3.7-flash" }).model, "gemini-3.7-flash");
 });
@@ -13,13 +13,13 @@ test("Gemini adapter requests structured JSON with low thinking", async () => {
   const built = await payload();
   let captured;
   const result = await callGemini(built, {
-    env: { GEMINI_API_KEY: "server-secret", GEMINI_MODEL: "gemini-3.7-flash" },
+    env: { GEMINI_API_KEY: "server-secret", GEMINI_MODEL: "gemini-3.6-flash" },
     fetchImpl: async (url, options) => {
       captured = { url, options, body: JSON.parse(options.body) };
       return { ok: true, async json() { return { candidates: [{ content: { parts: [{ text: JSON.stringify(report()) }] } }] }; } };
     },
   });
-  assert.match(captured.url, /gemini-3\.7-flash:generateContent$/);
+  assert.match(captured.url, /gemini-3\.6-flash:generateContent$/);
   assert.equal(captured.options.headers["x-goog-api-key"], "server-secret");
   assert.equal(captured.body.generationConfig.thinkingConfig.thinkingLevel, "low");
   assert.equal(captured.body.generationConfig.responseMimeType, "application/json");

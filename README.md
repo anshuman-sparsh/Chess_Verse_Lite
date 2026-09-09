@@ -92,7 +92,7 @@ Configure these Vercel environment variables for Production, Preview, and Develo
 
 ```text
 GEMINI_API_KEY=<server-side secret>
-GEMINI_MODEL=gemini-3.7-flash
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
 Never prefix the secret with `VITE_`, `NEXT_PUBLIC_`, or another public-client prefix. Never commit `.env` files containing the key.

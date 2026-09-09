@@ -33,7 +33,8 @@ test("rendered preferred move comes from trusted Stockfish analysis", async () =
   const prose = report();
   prose.criticalMoments[0].preferredMove = "g8f6";
   const nodes = renderedNodes(core.validateCoachReport(prose, built));
-  assert.ok(nodes.some((node) => node.textContent === "Stockfish preferred: Nf6"));
+  assert.ok(nodes.some((node) => node.textContent === "Stockfish preferred"));
+  assert.ok(nodes.some((node) => node.textContent === "Nf6"));
   assert.ok(!nodes.some((node) => node.textContent.includes("g8f6")));
 });
 

@@ -186,7 +186,7 @@
 
   function section(reportRoot, title) {
     const element = document.createElement("section");
-    element.className = "coach-report-section";
+    element.className = `coach-report-section coach-section-${title.toLowerCase().replace(/[^a-z]+/g, "-").replace(/(^-|-$)/g, "")}`;
     const heading = document.createElement("h3");
     heading.textContent = title;
     element.appendChild(heading);
@@ -214,8 +214,18 @@
     for (const moment of report.criticalMoments) {
       const card = document.createElement("article");
       card.className = "coach-critical-card";
+      const meta = document.createElement("div");
+      meta.className = "coach-critical-meta";
+      const notation = document.createElement("strong");
+      notation.className = "coach-critical-notation";
+      notation.textContent = criticalMoveReference(moment);
+      const badge = document.createElement("span");
+      badge.className = `coach-classification-badge coach-classification-${moment.classification}`;
+      badge.textContent = moment.classification;
+      meta.append(notation, badge);
+      card.appendChild(meta);
       const heading = document.createElement("h4");
-      heading.textContent = `${humanizeCoachText(moment.title)} · ${criticalMoveReference(moment)} · ${moment.classification}`;
+      heading.textContent = humanizeCoachText(moment.title);
       card.appendChild(heading);
       const changed = document.createElement("p");
       changed.textContent = humanizeCoachText(moment.whatChanged);
@@ -224,9 +234,13 @@
       mattered.textContent = humanizeCoachText(moment.whyItMattered);
       card.appendChild(mattered);
       if (moment.preferredMove) {
-        const best = document.createElement("p");
+        const best = document.createElement("div");
         best.className = "coach-preferred-move";
-        best.textContent = `Stockfish preferred: ${moment.preferredMove}`;
+        const bestLabel = document.createElement("span");
+        bestLabel.textContent = "Stockfish preferred";
+        const bestValue = document.createElement("strong");
+        bestValue.textContent = moment.preferredMove;
+        best.append(bestLabel, bestValue);
         card.appendChild(best);
       }
       critical.appendChild(card);

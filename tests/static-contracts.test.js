@@ -62,3 +62,25 @@ test("AI Coach mobile styles wrap content and retain touch targets", () => {
   assert.match(css, /@media \(max-width: 480px\)[\s\S]*\.tab-btn/);
   assert.match(css, /@media \(pointer: coarse\)[\s\S]*min-height:\s*44px/);
 });
+
+test("desktop workspace is bounded with keyboard-accessible internal tab scrolling", () => {
+  const html = read("index.html");
+  const css = read("static/css/style.css");
+  assert.match(html, /class="analysis-tab-viewport"/);
+  for (const id of ["tabContentMoves", "tabContentInfo", "tabContentCoach"]) {
+    assert.match(html, new RegExp(`id="${id}"[^>]*tabindex="0"`));
+  }
+  assert.match(css, /@media \(min-width: 900px\)[\s\S]*\.main-grid\s*\{[\s\S]*height:/);
+  assert.match(css, /\.analysis-tab-viewport\s*\{[\s\S]*flex:\s*1 1 auto/);
+  assert.match(css, /overscroll-behavior:\s*contain/);
+  assert.match(css, /scrollbar-gutter:\s*stable/);
+});
+
+test("mobile restores natural analysis flow and coach critical moments use semantic hierarchy", () => {
+  const css = read("static/css/style.css");
+  const coachClient = read("static/js/coach-client.js");
+  assert.match(css, /@media \(max-width: 899px\)[\s\S]*\.analysis-tab-viewport,[\s\S]*\.tab-content\s*\{[\s\S]*overflow:\s*visible/);
+  assert.match(coachClient, /coach-critical-meta/);
+  assert.match(coachClient, /coach-classification-badge/);
+  assert.match(coachClient, /criticalMoveReference\(moment\)/);
+});

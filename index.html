@@ -120,7 +120,8 @@
             aria-controls="tabContentCoach" tabindex="-1">AI Coach</button>
         </div>
 
-        <div id="tabContentMoves" class="tab-content" role="tabpanel" aria-labelledby="tabMovesBtn">
+        <div class="analysis-tab-viewport">
+        <div id="tabContentMoves" class="tab-content" role="tabpanel" aria-labelledby="tabMovesBtn" tabindex="0">
           <div class="current-move-panel" aria-live="polite">
             <h3 class="current-move-title">Current Move Analysis</h3>
             <p id="analysisEmptyState" class="current-move-placeholder">
@@ -147,7 +148,7 @@
           </div>
         </div>
 
-        <div id="tabContentInfo" class="tab-content" role="tabpanel" aria-labelledby="tabInfoBtn" hidden>
+        <div id="tabContentInfo" class="tab-content" role="tabpanel" aria-labelledby="tabInfoBtn" tabindex="0" hidden>
           <!-- Move Statistics Breakdown Card -->
           <div id="statsBreakdown" class="stats-breakdown" hidden>
             <h3 class="panel-section-title">Move Classification Breakdown</h3>
@@ -169,7 +170,7 @@
           </div>
         </div>
 
-        <div id="tabContentCoach" class="tab-content" role="tabpanel" aria-labelledby="tabCoachBtn" hidden>
+        <div id="tabContentCoach" class="tab-content" role="tabpanel" aria-labelledby="tabCoachBtn" tabindex="0" hidden>
           <div id="coachPanel" class="coach-panel" aria-live="polite" aria-busy="false">
             <p id="coachLockedState" class="current-move-placeholder">Analyze a game to unlock AI Coach.</p>
             <div id="coachReadyState" class="coach-ready-state" hidden>
@@ -179,6 +180,7 @@
             <p id="coachStatus" class="coach-status" role="status"></p>
             <div id="coachReport" class="coach-report" hidden></div>
           </div>
+        </div>
         </div>
       </section>
     </div>

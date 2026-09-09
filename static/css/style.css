@@ -157,6 +157,140 @@ body {
   display: none !important;
 }
 
+/* AI Coach extends the existing analysis panel without changing its layout. */
+.coach-panel {
+  min-width: 0;
+}
+
+.coach-ready-state {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.coach-ready-state p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.coach-generate-btn {
+  width: 100%;
+  border-color: rgba(110, 168, 254, 0.4);
+  background: rgba(110, 168, 254, 0.14);
+  color: var(--accent);
+}
+
+.coach-status {
+  min-height: 1.4em;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.coach-status.coach-error {
+  color: var(--danger);
+}
+
+.coach-report {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.coach-report-section {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  overflow-wrap: anywhere;
+}
+
+.coach-report-section h3 {
+  margin: 0 0 9px;
+  font-size: 1rem;
+}
+
+.coach-report-section p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.coach-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.coach-list li {
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.coach-list li:last-child {
+  margin-bottom: 0;
+}
+
+.coach-evidence {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.coach-critical-card {
+  padding: 12px;
+  border: 1px solid rgba(110, 168, 254, 0.22);
+  border-radius: 10px;
+  background: rgba(110, 168, 254, 0.06);
+}
+
+.coach-critical-card + .coach-critical-card {
+  margin-top: 10px;
+}
+
+.coach-critical-card h4 {
+  margin: 0 0 7px;
+  color: var(--accent);
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.coach-critical-card p + p {
+  margin-top: 7px;
+}
+
+.coach-preferred-move {
+  color: var(--accent-2) !important;
+  font-weight: 700;
+}
+
+.coach-phase-row {
+  display: grid;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+  text-transform: capitalize;
+}
+
+.coach-phase-row:last-child {
+  border-bottom: 0;
+}
+
+.coach-phase-row span,
+.coach-muted {
+  color: var(--muted) !important;
+}
+
+.coach-takeaway {
+  color: var(--accent-2) !important;
+  font-weight: 700;
+}
+
 /* Current move analysis (single-move focus, chess.com-style) */
 .current-move-panel {
   margin-top: 8px;
@@ -1265,6 +1399,18 @@ body {
   }
   .stats-table td {
     padding: 5px 4px;
+  }
+  .analysis-tabs {
+    gap: 2px;
+  }
+  .tab-btn {
+    flex: 1 1 auto;
+    padding-inline: 8px;
+    font-size: 0.9rem;
+  }
+  .coach-report-section,
+  .coach-ready-state {
+    padding: 12px;
   }
 }
 

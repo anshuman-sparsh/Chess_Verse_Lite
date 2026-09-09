@@ -163,35 +163,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // Tabs UI Elements
   const tabMovesBtn = document.getElementById("tabMovesBtn");
   const tabInfoBtn = document.getElementById("tabInfoBtn");
+  const tabCoachBtn = document.getElementById("tabCoachBtn");
   const tabContentMoves = document.getElementById("tabContentMoves");
   const tabContentInfo = document.getElementById("tabContentInfo");
+  const tabContentCoach = document.getElementById("tabContentCoach");
   const infoEmptyState = document.getElementById("infoEmptyState");
+  const tabDefinitions = [
+    { name: "moves", button: tabMovesBtn, panel: tabContentMoves },
+    { name: "info", button: tabInfoBtn, panel: tabContentInfo },
+    { name: "coach", button: tabCoachBtn, panel: tabContentCoach },
+  ];
 
   function showTab(tab) {
-    if (tab === "moves") {
-      tabMovesBtn?.classList.add("active");
-      tabInfoBtn?.classList.remove("active");
-      tabMovesBtn?.setAttribute("aria-selected", "true");
-      tabInfoBtn?.setAttribute("aria-selected", "false");
-      tabMovesBtn?.setAttribute("tabindex", "0");
-      tabInfoBtn?.setAttribute("tabindex", "-1");
-      tabContentMoves?.removeAttribute("hidden");
-      tabContentInfo?.setAttribute("hidden", "true");
-    } else if (tab === "info") {
-      tabMovesBtn?.classList.remove("active");
-      tabInfoBtn?.classList.add("active");
-      tabMovesBtn?.setAttribute("aria-selected", "false");
-      tabInfoBtn?.setAttribute("aria-selected", "true");
-      tabMovesBtn?.setAttribute("tabindex", "-1");
-      tabInfoBtn?.setAttribute("tabindex", "0");
-      tabContentMoves?.setAttribute("hidden", "true");
-      tabContentInfo?.removeAttribute("hidden");
+    for (const definition of tabDefinitions) {
+      const active = definition.name === tab;
+      definition.button?.classList.toggle("active", active);
+      definition.button?.setAttribute("aria-selected", String(active));
+      definition.button?.setAttribute("tabindex", active ? "0" : "-1");
+      if (active) definition.panel?.removeAttribute("hidden");
+      else definition.panel?.setAttribute("hidden", "true");
     }
   }
 
   tabMovesBtn?.addEventListener("click", () => showTab("moves"));
   tabInfoBtn?.addEventListener("click", () => showTab("info"));
-  [tabMovesBtn, tabInfoBtn].filter(Boolean).forEach((tab, index, tabs) => {
+  tabCoachBtn?.addEventListener("click", () => showTab("coach"));
+  tabDefinitions.map((definition) => definition.button).filter(Boolean).forEach((tab, index, tabs) => {
     tab.addEventListener("keydown", (event) => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
@@ -698,7 +695,15 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = currentMode === "practice";
     });
     const activeBtn = moveLogEl.querySelector(".move-btn.active");
-    if (activeBtn && shouldScroll) activeBtn.scrollIntoView({ block: "nearest" });
+    if (activeBtn && shouldScroll) {
+      const containerRect = moveLogEl.getBoundingClientRect();
+      const buttonRect = activeBtn.getBoundingClientRect();
+      if (buttonRect.top < containerRect.top) {
+        moveLogEl.scrollTop -= containerRect.top - buttonRect.top;
+      } else if (buttonRect.bottom > containerRect.bottom) {
+        moveLogEl.scrollTop += buttonRect.bottom - containerRect.bottom;
+      }
+    }
   }
 
   document.getElementById("moveLog")?.addEventListener("click", (event) => {
@@ -712,6 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function clearAnalysisUI() {
+    window.ChessVerseCoach?.clearAnalysis();
     selectedSquare = null;
     removeHighlights();
     const whiteEl = document.getElementById("whiteAccuracy");
@@ -1098,6 +1104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePlayersUI(parsedGame);
     renderAnalysis(analysis);
     renderMoveLog();
+    window.ChessVerseCoach?.setAnalysis(parsedGame, analysis);
 
     updateNavButtons();
     goToMove(0);

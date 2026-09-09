@@ -1,6 +1,6 @@
 # Chess Verse Lite
 
-Chess Verse Lite is a lightweight, responsive chess game reviewer. PGN parsing and Stockfish analysis run locally in the browser; no game data is sent to an analysis server.
+Chess Verse Lite is a lightweight, responsive chess game reviewer. PGN parsing and Stockfish analysis run locally in the browser. The optional AI Coach sends only a compact, structured summary of completed engine analysis through a server-side proxy when the user explicitly requests a report.
 
 Live app: [chess-verse-lite.vercel.app](https://chess-verse-lite.vercel.app/)
 
@@ -10,6 +10,7 @@ Live app: [chess-verse-lite.vercel.app](https://chess-verse-lite.vercel.app/)
 - Review every mainline move with a reusable Web Worker running bundled Stockfish.
 - Compare White/Black accuracy and inspect move classifications, best moves, and principal variations.
 - Explore variations in Practice Mode using click-to-move or drag-and-drop, including underpromotion choices.
+- Generate an optional, cached AI Coach explanation after Stockfish analysis completes.
 - Use keyboard navigation and a responsive dark/glassmorphic interface.
 
 ## Analysis semantics
@@ -48,6 +49,18 @@ These formulas are application heuristics, not official Chess.com or Lichess for
 - Only exact primary-PV scores are accepted; bound scores and other MultiPV lines are ignored.
 - PGN input is limited to 100,000 characters and games to 400 plies to protect low-memory/mobile devices.
 
+## AI Coach architecture
+
+```text
+Browser analysis data → POST /api/coach → Vercel Function → Gemini API
+```
+
+Stockfish remains the chess authority. Gemini receives classifications, mover-POV probability loss, compact move signals, and at most eight detailed critical moments. It is instructed to explain those facts, not independently analyze or reclassify moves. Both the request and the structured Gemini response are validated; nonexistent plies, changed classifications, changed preferred moves, oversized data, and unsupported phase ratings are rejected.
+
+Reports are generated only after an explicit click. Valid reports are cached in IndexedDB using the canonical game hash, analysis schema version, and coach schema version. Re-analyzing the same game can reuse the saved report without another API call.
+
+The client never receives the Gemini API key or provider URL. The public code communicates only with `/api/coach`.
+
 ## Run locally
 
 Opening `index.html` directly may be blocked by browser Worker/WASM security rules. Serving the directory over HTTP is recommended:
@@ -57,7 +70,7 @@ python -m pip install -r requirements.txt
 python run.py
 ```
 
-Then open `http://localhost:5000`.
+Then open `http://localhost:5000`. Stockfish works through Flask, but the Vercel AI Coach function is available locally only when using `vercel dev` with local environment variables.
 
 To explicitly enable Flask's development debugger, set `FLASK_DEBUG=1` in your local environment. Do not enable it in production.
 
@@ -69,8 +82,17 @@ Node.js 18 or newer is sufficient; there are no npm runtime dependencies.
 npm test
 ```
 
-The regression suite covers chess.js PGN/FEN parsing, special moves, tagged score math, mover perspective, short games, mate/Miss behavior, conservative classification evidence, UCI readiness, worker reuse, cancellation, session changes, stale responses, and timeout recovery.
+The regression suite covers chess.js PGN/FEN parsing, special moves, tagged score math, mover perspective, short games, mate/Miss behavior, conservative classification evidence, UCI readiness, worker reuse, cancellation, session changes, stale responses, coach payload/hash validation, response evidence integrity, caching, duplicate prevention, provider failures/timeouts, and endpoint security behavior. Tests use mocked Gemini responses and never make paid API calls.
 
 ## Deployment
 
-The included Vercel configuration adds baseline browser security headers. Stockfish remains client-side. There is no Gemini or AI Coach implementation in this version.
+The included Vercel configuration adds baseline browser security headers and a 30-second maximum duration for the coach function.
+
+Configure these Vercel environment variables for Production, Preview, and Development as appropriate:
+
+```text
+GEMINI_API_KEY=<server-side secret>
+GEMINI_MODEL=gemini-3.8-flash
+```
+
+Never prefix the secret with `VITE_`, `NEXT_PUBLIC_`, or another public-client prefix. Never commit `.env` files containing the key.

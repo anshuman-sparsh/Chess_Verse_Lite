@@ -21,6 +21,8 @@
   <!-- app logic -->
   <script src="static/js/analysis-core.js" defer></script>
   <script src="static/js/stockfish-controller.js" defer></script>
+  <script src="static/js/coach-core.js" defer></script>
+  <script src="static/js/coach-client.js" defer></script>
   <script src="static/js/app.js" defer></script>
 </head>
 
@@ -114,6 +116,8 @@
             aria-controls="tabContentMoves">Moves</button>
           <button id="tabInfoBtn" class="tab-btn" type="button" role="tab" aria-selected="false"
             aria-controls="tabContentInfo">Info</button>
+          <button id="tabCoachBtn" class="tab-btn" type="button" role="tab" aria-selected="false"
+            aria-controls="tabContentCoach" tabindex="-1">AI Coach</button>
         </div>
 
         <div id="tabContentMoves" class="tab-content" role="tabpanel" aria-labelledby="tabMovesBtn">
@@ -162,6 +166,18 @@
           <!-- Empty state for Info if no analysis is loaded -->
           <div id="infoEmptyState" class="current-move-placeholder" style="margin-top: 16px;">
             No classification breakdown yet. Load and analyze a game to see stats.
+          </div>
+        </div>
+
+        <div id="tabContentCoach" class="tab-content" role="tabpanel" aria-labelledby="tabCoachBtn" hidden>
+          <div id="coachPanel" class="coach-panel" aria-live="polite" aria-busy="false">
+            <p id="coachLockedState" class="current-move-placeholder">Analyze a game to unlock AI Coach.</p>
+            <div id="coachReadyState" class="coach-ready-state" hidden>
+              <p>Stockfish remains the source of truth. AI Coach explains the completed analysis.</p>
+              <button id="generateCoachBtn" class="btn coach-generate-btn" type="button">Generate AI Coach Review</button>
+            </div>
+            <p id="coachStatus" class="coach-status" role="status"></p>
+            <div id="coachReport" class="coach-report" hidden></div>
           </div>
         </div>
       </section>

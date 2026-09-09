@@ -61,13 +61,15 @@ test("endpoint validates and returns a compact mocked report", async () => {
   assert.equal(response.headers["cache-control"], "no-store");
 });
 
-test("unsupported Gemini ply references are rejected", async () => {
+test("endpoint ignores Gemini attempts to echo or alter immutable engine facts", async () => {
   const built = await payload();
-  const invalid = report();
-  invalid.strengths[0].plies = [999];
-  const response = await invoke(handlerWith(async () => ({ report: invalid, model: "test" })), { body: built });
-  assert.equal(response.status, 502);
-  assert.equal(response.body.error.code, "invalid_provider_response");
+  const prose = report();
+  Object.assign(prose.criticalMoments[0], { preferredMove: "g8f6", ply: 999, classification: "best" });
+  const response = await invoke(handlerWith(async () => ({ report: prose, model: "test" })), { body: built });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.report.criticalMoments[0].preferredMove, "Nf6");
+  assert.equal(response.body.report.criticalMoments[0].ply, 4);
+  assert.equal(response.body.report.criticalMoments[0].classification, "blunder");
 });
 
 test("provider 400/401/403/429/500 and timeout errors map to safe responses", async (t) => {

@@ -30,19 +30,26 @@ test("payload validation preserves classification integrity", async () => {
   assert.throws(() => core.validatePayload(built), /conflicts/i);
 });
 
-test("report validation rejects nonexistent plies and changed engine facts", async () => {
+test("Gemini prose is merged with immutable Stockfish facts", async () => {
   const built = await payload();
-  const badPly = report();
-  badPly.strengths[0].plies = [999];
-  assert.throws(() => core.validateCoachReport(badPly, built), /nonexistent ply/i);
+  const prose = report();
+  assert.equal("preferredMove" in prose.criticalMoments[0], false);
+  const merged = core.validateCoachReport(prose, built);
+  assert.equal(merged.criticalMoments[0].preferredMove, "Nf6");
+  assert.equal(merged.criticalMoments[0].classification, "blunder");
+  assert.equal(merged.criticalMoments[0].ply, 4);
+});
 
-  const badClass = report();
-  badClass.criticalMoments[0].classification = "mistake";
-  assert.throws(() => core.validateCoachReport(badClass, built), /classification/i);
-
-  const badMove = report();
-  badMove.criticalMoments[0].preferredMove = "a6";
-  assert.throws(() => core.validateCoachReport(badMove, built), /preferred move/i);
+test("Gemini cannot replace a preferred move and SAN/UCI differences cannot reject prose", async () => {
+  const built = await payload();
+  const prose = report();
+  prose.criticalMoments[0].preferredMove = "g8f6";
+  prose.criticalMoments[0].ply = 999;
+  prose.criticalMoments[0].classification = "best";
+  const merged = core.validateCoachReport(prose, built);
+  assert.equal(merged.criticalMoments[0].preferredMove, "Nf6");
+  assert.equal(merged.criticalMoments[0].ply, 4);
+  assert.equal(merged.criticalMoments[0].classification, "blunder");
 });
 
 test("analysis version changes invalidate the cache key", async () => {

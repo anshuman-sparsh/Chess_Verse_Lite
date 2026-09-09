@@ -5,7 +5,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const COACH_SCHEMA_VERSION = 1;
+  const COACH_SCHEMA_VERSION = 2;
   const ANALYSIS_SCHEMA_VERSION = 2;
   const MAX_PLIES = 400;
   const MAX_CRITICAL_MOMENTS = 8;
@@ -296,78 +296,72 @@
     };
   }
 
-  function textItem(value, basis, allowedPlies, maxLength = 500) {
-    if (!isRecord(value) || value.basis !== basis) throw validationError("Invalid report evidence basis.");
+  function textItem(value, basis, plies, maxLength = 500) {
+    if (!isRecord(value)) throw validationError("Invalid report text.");
     const text = cleanString(value.text, maxLength);
     if (!text) throw validationError("Report text is required.");
-    const plies = Array.isArray(value.plies) ? [...new Set(value.plies)] : [];
-    if (!plies.length) throw validationError("Report evidence must reference at least one ply.");
-    if (plies.some((ply) => !Number.isInteger(ply) || !allowedPlies.has(ply))) {
-      throw validationError("Report references a nonexistent ply.");
-    }
     return { text, basis, plies };
   }
 
   function validateCoachReport(report, payload) {
     if (!isRecord(report)) throw validationError("Gemini returned an invalid report object.");
-    const allowedPlies = new Set(payload.moveSignals.map((move) => move.ply));
-    const criticalByPly = new Map(payload.criticalMoments.map((moment) => [moment.ply, moment]));
-    const mapItems = (items, basis, maxItems) => {
+    const allPlies = payload.moveSignals.map((move) => move.ply);
+    const mapItems = (items, basis, maxItems, plies = allPlies) => {
       if (!Array.isArray(items) || items.length > maxItems) throw validationError("Invalid report list.");
-      return items.map((item) => textItem(item, basis, allowedPlies));
+      return items.map((item) => textItem(item, basis, plies));
     };
 
-    if (!Array.isArray(report.criticalMoments) || report.criticalMoments.length > MAX_CRITICAL_MOMENTS) {
+    if (!Array.isArray(report.criticalMoments) || report.criticalMoments.length !== payload.criticalMoments.length) {
       throw validationError("Invalid report critical moments.");
     }
-    const criticalMoments = report.criticalMoments.map((item) => {
-      if (!isRecord(item) || !Number.isInteger(item.ply) || !criticalByPly.has(item.ply)) {
-        throw validationError("Report references an unsupported critical moment.");
-      }
-      const evidence = criticalByPly.get(item.ply);
-      if (item.basis !== "engine") throw validationError("Invalid critical-moment evidence basis.");
-      if (item.classification !== evidence.classification) throw validationError("Report changed an engine classification.");
-      const preferredMove = item.preferredMove == null ? null : cleanString(item.preferredMove, 32);
-      if (preferredMove !== evidence.bestMove) throw validationError("Report changed the engine preferred move.");
+    const criticalMoments = report.criticalMoments.map((item, index) => {
+      if (!isRecord(item)) throw validationError("Invalid critical-moment explanation.");
+      const evidence = payload.criticalMoments[index];
       const title = cleanString(item.title, 100);
       const whatChanged = cleanString(item.whatChanged, 500);
       const whyItMattered = cleanString(item.whyItMattered, 500);
       if (!title || !whatChanged || !whyItMattered) throw validationError("Critical-moment text is required.");
       return {
-        ply: item.ply,
+        ply: evidence.ply,
+        moveNumber: evidence.moveNumber,
+        side: evidence.side,
+        san: evidence.san,
         classification: evidence.classification,
         title,
         whatChanged,
         whyItMattered,
-        preferredMove,
+        preferredMove: evidence.bestMove,
+        evaluationBefore: evidence.evaluationBefore,
+        evaluationAfter: evidence.evaluationAfter,
+        winProbabilityBefore: evidence.winProbabilityBefore,
+        winProbabilityAfter: evidence.winProbabilityAfter,
+        winProbabilityLoss: evidence.winProbabilityLoss,
+        principalVariation: evidence.principalVariation,
         basis: "engine",
       };
     });
 
     let phaseAssessment = null;
     if (report.phaseAssessment !== null) {
-      if (!Array.isArray(report.phaseAssessment) || report.phaseAssessment.length > 5) throw validationError("Invalid phase assessment.");
-      const supported = new Set(payload.summary.phaseMetrics.filter((metric) => metric.plies >= 2).map((metric) => `${metric.side}:${metric.phase}`));
-      phaseAssessment = report.phaseAssessment.map((item) => {
-        if (!isRecord(item) || !supported.has(`${item.side}:${item.phase}`)) throw validationError("Unsupported phase assessment.");
+      const metrics = payload.summary.phaseMetrics.filter((metric) => metric.plies >= 2).slice(0, 5);
+      if (!Array.isArray(report.phaseAssessment) || report.phaseAssessment.length !== metrics.length) throw validationError("Invalid phase assessment.");
+      phaseAssessment = report.phaseAssessment.map((item, index) => {
+        if (!isRecord(item)) throw validationError("Unsupported phase assessment.");
         if (!['strong', 'solid', 'mixed', 'needs-work'].includes(item.rating)) throw validationError("Invalid phase rating.");
-        const evidence = textItem({ text: item.text, basis: item.basis, plies: item.plies }, "engine", allowedPlies, 400);
-        if (evidence.plies.length < 2 || evidence.plies.some((ply) => {
-          const move = payload.moveSignals[ply - 1];
-          return move.side !== item.side || move.phase !== item.phase;
-        })) throw validationError("Phase evidence does not support the assessment.");
-        return { side: item.side, phase: item.phase, rating: item.rating, ...evidence };
+        const metric = metrics[index];
+        const plies = payload.moveSignals.filter((move) => move.side === metric.side && move.phase === metric.phase).map((move) => move.ply);
+        return { side: metric.side, phase: metric.phase, rating: item.rating, ...textItem(item, "engine", plies, 400) };
       });
     }
 
     const validated = {
-      overallReview: textItem(report.overallReview, "engine", allowedPlies, 700),
+      overallReview: textItem(report.overallReview, "engine", allPlies, 700),
       strengths: mapItems(report.strengths, "engine", 5),
       areasToImprove: mapItems(report.areasToImprove, "engine", 5),
       criticalMoments,
       trainingRecommendations: mapItems(report.trainingRecommendations, "general_coaching_advice", 5),
       phaseAssessment,
-      oneLineTakeaway: textItem(report.oneLineTakeaway, "general_coaching_advice", allowedPlies, 240),
+      oneLineTakeaway: textItem(report.oneLineTakeaway, "general_coaching_advice", allPlies, 240),
     };
     if (new TextEncoder().encode(JSON.stringify(validated)).length > MAX_RESPONSE_BYTES) throw validationError("AI Coach report is too large.");
     return validated;
@@ -378,49 +372,41 @@
     additionalProperties: false,
     required: ["overallReview", "strengths", "areasToImprove", "criticalMoments", "trainingRecommendations", "phaseAssessment", "oneLineTakeaway"],
     properties: {
-      overallReview: evidenceSchema("engine"),
-      strengths: { type: "array", maxItems: 5, items: evidenceSchema("engine") },
-      areasToImprove: { type: "array", maxItems: 5, items: evidenceSchema("engine") },
+      overallReview: proseSchema(),
+      strengths: { type: "array", maxItems: 5, items: proseSchema() },
+      areasToImprove: { type: "array", maxItems: 5, items: proseSchema() },
       criticalMoments: {
         type: "array", maxItems: MAX_CRITICAL_MOMENTS,
         items: {
           type: "object", additionalProperties: false,
-          required: ["ply", "classification", "title", "whatChanged", "whyItMattered", "preferredMove", "basis"],
+          required: ["title", "whatChanged", "whyItMattered"],
           properties: {
-            ply: { type: "integer" }, classification: { type: "string", enum: CLASSIFICATIONS },
             title: { type: "string" }, whatChanged: { type: "string" }, whyItMattered: { type: "string" },
-            preferredMove: { anyOf: [{ type: "string" }, { type: "null" }] }, basis: { type: "string", enum: ["engine"] },
           },
         },
       },
-      trainingRecommendations: { type: "array", maxItems: 5, items: evidenceSchema("general_coaching_advice") },
+      trainingRecommendations: { type: "array", maxItems: 5, items: proseSchema() },
       phaseAssessment: {
         anyOf: [
           { type: "null" },
           { type: "array", maxItems: 5, items: {
             type: "object", additionalProperties: false,
-            required: ["side", "phase", "rating", "text", "basis", "plies"],
+            required: ["rating", "text"],
             properties: {
-              side: { type: "string", enum: ["white", "black"] },
-              phase: { type: "string", enum: ["opening", "middlegame", "endgame"] },
               rating: { type: "string", enum: ["strong", "solid", "mixed", "needs-work"] },
-              text: { type: "string" }, basis: { type: "string", enum: ["engine"] },
-              plies: { type: "array", minItems: 2, items: { type: "integer" } },
+              text: { type: "string" },
             },
           } },
         ],
       },
-      oneLineTakeaway: evidenceSchema("general_coaching_advice"),
+      oneLineTakeaway: proseSchema(),
     },
   };
 
-  function evidenceSchema(basis) {
+  function proseSchema() {
     return {
-      type: "object", additionalProperties: false, required: ["text", "basis", "plies"],
-      properties: {
-        text: { type: "string" }, basis: { type: "string", enum: [basis] },
-        plies: { type: "array", minItems: 1, items: { type: "integer" } },
-      },
+      type: "object", additionalProperties: false, required: ["text"],
+      properties: { text: { type: "string" } },
     };
   }
 

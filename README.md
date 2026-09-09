@@ -55,7 +55,7 @@ These formulas are application heuristics, not official Chess.com or Lichess for
 Browser analysis data → POST /api/coach → Vercel Function → Gemini API
 ```
 
-Stockfish remains the chess authority. Gemini receives classifications, mover-POV probability loss, compact move signals, and at most eight detailed critical moments. It is instructed to explain those facts, not independently analyze or reclassify moves. Both the request and the structured Gemini response are validated; nonexistent plies, changed classifications, changed preferred moves, oversized data, and unsupported phase ratings are rejected.
+Stockfish remains the chess authority. Gemini receives classifications, mover-POV probability loss, compact move signals, and at most eight detailed critical moments. Gemini returns explanatory prose only; the application merges it with server-validated Stockfish moves, classifications, evaluations, probabilities, and lines. Requests, prose responses, sizes, and supported phase ratings are validated.
 
 Reports are generated only after an explicit click. Valid reports are cached in IndexedDB using the canonical game hash, analysis schema version, and coach schema version. Re-analyzing the same game can reuse the saved report without another API call.
 
@@ -92,7 +92,7 @@ Configure these Vercel environment variables for Production, Preview, and Develo
 
 ```text
 GEMINI_API_KEY=<server-side secret>
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.7-flash
 ```
 
 Never prefix the secret with `VITE_`, `NEXT_PUBLIC_`, or another public-client prefix. Never commit `.env` files containing the key.

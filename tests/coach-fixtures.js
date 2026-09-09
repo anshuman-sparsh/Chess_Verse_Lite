@@ -40,21 +40,17 @@ async function payload() {
 
 function report() {
   return {
-    overallReview: { text: "White gained the decisive advantage after Black's fourth ply.", basis: "engine", plies: [4] },
-    strengths: [{ text: "White kept the early position stable.", basis: "engine", plies: [1, 3] }],
-    areasToImprove: [{ text: "Black should reduce large tactical losses.", basis: "engine", plies: [4] }],
+    overallReview: { text: "White gained the decisive advantage after Black's fourth ply." },
+    strengths: [{ text: "White kept the early position stable." }],
+    areasToImprove: [{ text: "Black should reduce large tactical losses." }],
     criticalMoments: [{
-      ply: 4,
-      classification: "blunder",
       title: "Decisive fourth ply",
       whatChanged: "Black's winning probability fell sharply.",
       whyItMattered: "This produced the game's largest engine-measured loss.",
-      preferredMove: "Nf6",
-      basis: "engine",
     }],
-    trainingRecommendations: [{ text: "Practice checking forcing replies before developing a piece.", basis: "general_coaching_advice", plies: [4] }],
-    phaseAssessment: [{ side: "black", phase: "opening", rating: "needs-work", text: "The opening contained one decisive loss.", basis: "engine", plies: [2, 4] }],
-    oneLineTakeaway: { text: "Check your opponent's forcing threats before each developing move.", basis: "general_coaching_advice", plies: [4] },
+    trainingRecommendations: [{ text: "Practice checking forcing replies before developing a piece." }],
+    phaseAssessment: null,
+    oneLineTakeaway: { text: "Check your opponent's forcing threats before each developing move." },
   };
 }
 
